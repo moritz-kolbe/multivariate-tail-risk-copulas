@@ -1,0 +1,1 @@
+This project applies univariate EVT analysis and copula modelling to capture dependence in heavy-tailed losses. Gaussian and t-copula models are compared to evaluate which produces more realistic tail risk estimates. Portfolio VaR and ES are derived from Monte Carlo simulation of the fitted joint distribution.
