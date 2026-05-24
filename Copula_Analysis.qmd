@@ -1,0 +1,103 @@
+```{python}
+import pandas as pd
+import numpy as np
+from pyextremes import EVA 
+import matplotlib.pyplot as plt
+import seaborn as sns 
+import pyvinecopulib as pv
+import pyextremes
+import yfinance as yf
+from arch import arch_model
+from multiprocessing import Pool
+```
+
+List of tickers
+
+```{python}
+ticker = [
+    '^GDAXI',
+    '^FTSE',
+    '^GSPC',
+    '^SSMI',
+    '^HSI',
+    'CL=F',
+    'SI=F',
+    'ALI=F',
+    'GC=F',
+    'HG=F',
+]
+```
+
+
+```{python}
+prices = yf.download(ticker, start="2016-01-01")
+close = prices['Close']
+close[close <= 0] = np.nan
+log_losses = -np.log(close / close.shift(1)).dropna()
+```
+
+
+```{python}
+def garch(ticker, losses, p, q):
+    std_resid = {}
+    for t in ticker:
+        gam = arch_model(losses[t]*100, vol='GARCH', p=p, q=q)
+        result = gam.fit(disp='off')
+        std_resid[t] = result.resid / result.conditional_volatility
+    return std_resid
+
+std_resid = garch(ticker , log_losses, 1, 1)
+std_resid
+pd.DataFrame(std_resid).std()
+```
+
+
+```{python}
+alpha = 0.95
+def GPD_fit(ticker, std_resid, alpha):
+    u = {}
+    model = {}
+    GPD = {}
+    for t in ticker:
+        u[t] = np.quantile(std_resid[t], alpha)
+        model[t] = EVA(data= std_resid[t])
+        model[t].get_extremes(method='POT', threshold=u[t])
+        GPD[t] = model[t].fit_model(
+            distribution='genpareto',
+            model='MLE'  
+        )
+    return u, model, GPD
+
+u, model, GPD = GPD_fit(ticker, std_resid, alpha)
+
+
+indices = [
+    '^GDAXI',
+    '^FTSE',
+    '^GSPC',
+    '^SSMI',
+    '^HSI',
+]
+commodities = [
+    'CL=F',
+    'SI=F',
+    'ALI=F',
+    'GC=F',
+    'HG=F',
+]
+fig, axes = plt.subplots(2, 3, figsize=(15,10))
+for ax, t in zip(axes.flatten(), indices):
+    model[t].plot_probability('QQ', ax=ax)
+    axes.flatten()[-1].set_visible(False)
+    ax.set_title(t)
+plt.show()
+
+fig, axes = plt.subplots(2, 3, figsize=(15,10))
+for ax, c in zip(axes.flatten(), commodities):
+    model[c].plot_probability('QQ', ax=ax)
+    axes.flatten()[-1].set_visible(False)
+    ax.set_title(c)
+plt.show()
+
+
+```
