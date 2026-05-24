@@ -1,6 +1,7 @@
 ```{python}
 import pandas as pd
 import numpy as np
+from scipy.stats import rankdata
 from pyextremes import EVA 
 import matplotlib.pyplot as plt
 import seaborn as sns 
@@ -54,50 +55,70 @@ pd.DataFrame(std_resid).std()
 
 ```{python}
 alpha = 0.95
+
+
 def GPD_fit(ticker, std_resid, alpha):
     u = {}
     model = {}
-    GPD = {}
     for t in ticker:
         u[t] = np.quantile(std_resid[t], alpha)
-        model[t] = EVA(data= std_resid[t])
-        model[t].get_extremes(method='POT', threshold=u[t])
-        GPD[t] = model[t].fit_model(
-            distribution='genpareto',
-            model='MLE'  
-        )
-    return u, model, GPD
+        model[t] = EVA(data=std_resid[t])
+        model[t].get_extremes(method="POT", threshold=u[t])
+        model[t].fit_model(distribution="genpareto", model="MLE")
+    return u, model
 
-u, model, GPD = GPD_fit(ticker, std_resid, alpha)
 
+u, model = GPD_fit(ticker, std_resid, alpha)
 
 indices = [
-    '^GDAXI',
-    '^FTSE',
-    '^GSPC',
-    '^SSMI',
-    '^HSI',
+    "^GDAXI",
+    "^FTSE",
+    "^GSPC",
+    "^SSMI",
+    "^HSI",
 ]
 commodities = [
-    'CL=F',
-    'SI=F',
-    'ALI=F',
-    'GC=F',
-    'HG=F',
+    "CL=F",
+    "SI=F",
+    "ALI=F",
+    "GC=F",
+    "HG=F",
 ]
-fig, axes = plt.subplots(2, 3, figsize=(15,10))
+fig, axes = plt.subplots(2, 3, figsize=(15, 10))
 for ax, t in zip(axes.flatten(), indices):
-    model[t].plot_probability('QQ', ax=ax)
+    model[t].plot_probability("QQ", ax=ax)
     axes.flatten()[-1].set_visible(False)
     ax.set_title(t)
 plt.show()
 
-fig, axes = plt.subplots(2, 3, figsize=(15,10))
+fig, axes = plt.subplots(2, 3, figsize=(15, 10))
 for ax, c in zip(axes.flatten(), commodities):
-    model[c].plot_probability('QQ', ax=ax)
+    model[c].plot_probability("QQ", ax=ax)
     axes.flatten()[-1].set_visible(False)
     ax.set_title(c)
 plt.show()
 
 
+def pit(ticker, model, std_resid):
+    F = {}
+    for t in ticker:
+        u_t = u[t]
+        n_u = len(model[t].extremes)
+        n = len(std_resid[t])
+        f_bar_u = n_u / n
+        z_full = std_resid[t].dropna().to_numpy()
+        z_tail = z_full[z_full > u_t]
+        F_body = rankdata(z_full)[z_full <= u_t] / (n + 1)
+        xi = model[t].distribution.mle_parameters["c"]
+        sigma = model[t].distribution.mle_parameters["scale"]
+        F_tail = 1 - f_bar_u * (1 + xi * ((z_tail - u_t) / sigma)) ** (-1 / xi)
+        F_full = np.zeros(n)
+        F_full[z_full <= u_t] = F_body
+        F_full[z_full > u_t] = F_tail
+        F[t] = F_full
+    return F
+
+
+F_ticker = pit(ticker, model, std_resid)
+pd.DataFrame(F_ticker).describe()
 ```
