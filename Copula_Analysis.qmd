@@ -17,11 +17,11 @@ List of tickers
 
 ```{python}
 ticker = [
-    '^GDAXI',
-    '^FTSE',
-    '^GSPC',
-    '^SSMI',
-    '^HSI',
+    'NVDA',
+    'GOOGL',
+    'JPM',
+    'WMT',
+    'XOM',
     'CL=F',
     'SI=F',
     'ALI=F',
@@ -71,12 +71,12 @@ def GPD_fit(ticker, std_resid, alpha):
 
 u, model = GPD_fit(ticker, std_resid, alpha)
 
-indices = [
-    "^GDAXI",
-    "^FTSE",
-    "^GSPC",
-    "^SSMI",
-    "^HSI",
+assets = [
+    "NVDA",
+    "GOOGL",
+    "JPM",
+    "WMT",
+    "XOM",
 ]
 commodities = [
     "CL=F",
@@ -86,7 +86,7 @@ commodities = [
     "HG=F",
 ]
 fig, axes = plt.subplots(2, 3, figsize=(15, 10))
-for ax, t in zip(axes.flatten(), indices):
+for ax, t in zip(axes.flatten(), assets):
     model[t].plot_probability("QQ", ax=ax)
     axes.flatten()[-1].set_visible(False)
     ax.set_title(t)
@@ -131,7 +131,7 @@ mat = np.array(list(F_ticker.values())).T
 Cop = pv.Vinecop(d=10)
 Cop.select(data=mat)
 Cop
-pair_cop = Cop.get_pair_copula(tree=0, edge=1)
+pair_cop = Cop.get_pair_copula(tree=0, edge=0)
 sim = pv.Bicop.simulate(pair_cop, n = 100000)
 pv.pairs_copula_data(sim)
 pv.Vinecop.bic(Cop, mat)
@@ -141,9 +141,12 @@ pcs = [[bicop, bicop], [bicop]]
 controls = pv.FitControlsVinecop(family_set=[pv.BicopFamily.gaussian])
 Gauss_Cop = pv.Vinecop.from_data(mat, controls=controls)
 Gauss_Cop
-pair_cop = Gauss_Cop.get_pair_copula(tree=0, edge = 1)
+pair_cop = Gauss_Cop.get_pair_copula(tree=0, edge = 0)
 sim = pv.Bicop.simulate(pair_cop, n = 100000)
 pv.pairs_copula_data(sim)
 pv.Vinecop.bic(Gauss_Cop, mat)
+```
+
+```{python}
 
 ```
