@@ -2,7 +2,7 @@
 import pandas as pd
 import numpy as np
 from pyvinecopulib import Vinecop
-from scipy.stats import rankdata
+from scipy.stats import rankdata, genpareto
 from pyextremes import EVA 
 import matplotlib.pyplot as plt
 import seaborn as sns 
@@ -42,13 +42,15 @@ log_losses = -np.log(close / close.shift(1)).dropna()
 ```{python}
 def garch(ticker, losses, p, q):
     std_resid = {}
+    conditional_volatility = {}
     for t in ticker:
         gam = arch_model(losses[t]*100, vol='GARCH', p=p, q=q)
         result = gam.fit(disp='off')
         std_resid[t] = result.resid / result.conditional_volatility
-    return std_resid
+        conditional_volatility[t] = result.conditional_volatility / 100
+    return std_resid, conditional_volatility
 
-std_resid = garch(ticker , log_losses, 1, 1)
+std_resid, conditional_volatility = garch(ticker , log_losses, 1, 1)
 std_resid
 pd.DataFrame(std_resid).std()
 ```
@@ -148,5 +150,38 @@ pv.Vinecop.bic(Gauss_Cop, mat)
 ```
 
 ```{python}
+sim = pv.Vinecop.simulate(Cop, n=10000)
+sim.shape
 
+
+def inv_pit(ticker, std_resid, model, sim, alpha):
+    F_inv = {}
+    for i, t in enumerate(ticker):
+        n = len(sim[:, i])
+        u_full = sim[:, i]
+        u_tail = u_full[u_full > alpha]
+        F_inv_body = np.quantile(std_resid[t], u_full)[u_full <= alpha]
+        xi = model[t].distribution.mle_parameters["c"]
+        sigma = model[t].distribution.mle_parameters["scale"]
+        F_inv_tail = genpareto.ppf(u_tail, c=xi, scale=sigma)
+        F_inv_full = np.zeros(n)
+        F_inv_full[u_full <= alpha] = F_inv_body
+        F_inv_full[u_full > alpha] = F_inv_tail + np.quantile(std_resid[t], alpha)
+        F_inv[t] = F_inv_full
+    return F_inv
+
+
+F_inv = inv_pit(ticker, std_resid, model, sim, alpha)
+sim_resid = pd.DataFrame(F_inv)
+
+
+def rescale(ticker, sim_resid, conditional_volatility):
+    sim_losses = pd.DataFrame(index=range(len(sim_resid)), columns=ticker)
+    for t in sim_resid:
+        sim_losses[t] = sim_resid[t] * conditional_volatility[t].iloc[-1]
+    return sim_losses
+
+
+sim_log_losses = rescale(ticker, sim_resid, conditional_volatility)
+sim_log_losses["JPM"].plot()
 ```
