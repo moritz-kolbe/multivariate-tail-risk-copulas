@@ -122,3 +122,18 @@ def pit(ticker, model, std_resid):
 F_ticker = pit(ticker, model, std_resid)
 pd.DataFrame(F_ticker).describe()
 ```
+
+
+```{python}
+# Automated selection
+mat = np.array(list(F_ticker.values())).T
+Cop = pv.Vinecop(d=10)
+Cop.select(data=mat)
+Cop.plot(tree=[1])
+
+bicop = pv.Bicop(pv.BicopFamily.gaussian)
+pcs = [[bicop, bicop], [bicop]]
+controls = pv.FitControlsVinecop(family_set=[pv.BicopFamily.gaussian])
+Gauss_Cop = pv.Vinecop.from_data(mat, controls=controls)
+
+```
