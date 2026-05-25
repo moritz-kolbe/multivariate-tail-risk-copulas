@@ -1,6 +1,7 @@
 ```{python}
 import pandas as pd
 import numpy as np
+from pyvinecopulib import Vinecop
 from scipy.stats import rankdata
 from pyextremes import EVA 
 import matplotlib.pyplot as plt
@@ -129,11 +130,20 @@ pd.DataFrame(F_ticker).describe()
 mat = np.array(list(F_ticker.values())).T
 Cop = pv.Vinecop(d=10)
 Cop.select(data=mat)
-Cop.plot(tree=[1])
+Cop
+pair_cop = Cop.get_pair_copula(tree=0, edge=1)
+sim = pv.Bicop.simulate(pair_cop, n = 100000)
+pv.pairs_copula_data(sim)
+pv.Vinecop.bic(Cop, mat)
 
 bicop = pv.Bicop(pv.BicopFamily.gaussian)
 pcs = [[bicop, bicop], [bicop]]
 controls = pv.FitControlsVinecop(family_set=[pv.BicopFamily.gaussian])
 Gauss_Cop = pv.Vinecop.from_data(mat, controls=controls)
+Gauss_Cop
+pair_cop = Gauss_Cop.get_pair_copula(tree=0, edge = 1)
+sim = pv.Bicop.simulate(pair_cop, n = 100000)
+pv.pairs_copula_data(sim)
+pv.Vinecop.bic(Gauss_Cop, mat)
 
 ```
