@@ -1,6 +1,7 @@
 ```{python}
 import pandas as pd
 import numpy as np
+from matplotlib.pyplot import axvline
 from pyvinecopulib import Vinecop
 from scipy.stats import rankdata, genpareto
 from pyextremes import EVA 
@@ -152,7 +153,7 @@ pv.Vinecop.bic(Gauss_Cop, mat)
 ```{python}
 sim = pv.Vinecop.simulate(Cop, n=10000)
 sim.shape
-
+sim_gauss = pv.Vinecop.simulate(Gauss_Cop, n = 10000)
 
 def inv_pit(ticker, std_resid, model, sim, alpha):
     F_inv = {}
@@ -174,6 +175,9 @@ def inv_pit(ticker, std_resid, model, sim, alpha):
 F_inv = inv_pit(ticker, std_resid, model, sim, alpha)
 sim_resid = pd.DataFrame(F_inv)
 
+F_inv_gauss = inv_pit(ticker, std_resid, model, sim_gauss, alpha)
+sim_resid_gauss = pd.DataFrame(F_inv_gauss)
+
 
 def rescale(ticker, sim_resid, conditional_volatility):
     sim_losses = pd.DataFrame(index=range(len(sim_resid)), columns=ticker)
@@ -183,5 +187,41 @@ def rescale(ticker, sim_resid, conditional_volatility):
 
 
 sim_log_losses = rescale(ticker, sim_resid, conditional_volatility)
-sim_log_losses["JPM"].plot()
+sim_log_losses_gauß = rescale(ticker, sim_resid_gauss, conditional_volatility)
 ```
+
+```{python}
+Loss_Portfolio = pd.DataFrame.sum(sim_log_losses, axis=1) / sim_log_losses.shape[1]
+
+Loss_Portfolio_gauss = (
+    pd.DataFrame.sum(sim_log_losses_gauß, axis=1) / sim_log_losses_gauß.shape[1]
+)
+
+VaR_empirical = np.quantile(Loss_Portfolio, 0.99)
+ES_empiricial = Loss_Portfolio[Loss_Portfolio > VaR_empirical].mean()
+
+VaR_empirical
+ES_empiricial
+
+VaR_empirical_gauss = np.quantile(Loss_Portfolio_gauss, 0.99)
+ES_empiricial_gauss = Loss_Portfolio_gauss[
+    Loss_Portfolio_gauss > VaR_empirical_gauss
+].mean()
+
+VaR_empirical_gauss
+ES_empiricial_gauss
+
+sns.histplot(Loss_Portfolio, label="Vine", alpha=0.5, stat="probability")
+sns.histplot(Loss_Portfolio_gauss, label="Gauss", alpha=0.5, stat="probability")
+plt.xlim(0.04, 0.30)
+plt.axvline(VaR_empirical, color="steelblue", label="Vine VaR-0.99%")
+plt.axvline(ES_empiricial, color="navy", linestyle="--", label="Vine ES-0.99%")
+plt.axvline(VaR_empirical_gauss, color="tomato", label="Gauss VaR-0.99%")
+plt.axvline(ES_empiricial_gauss, color="darkred", linestyle="--", label="Gauß ES-0.99%")
+plt.legend()
+plt.show()
+```
+
+
+
+
