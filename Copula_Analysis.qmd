@@ -44,14 +44,15 @@ log_losses = -np.log(close / close.shift(1)).dropna()
 def garch(ticker, losses, p, q):
     std_resid = {}
     conditional_volatility = {}
+    garch_result = {}
     for t in ticker:
         gam = arch_model(losses[t]*100, vol='GARCH', p=p, q=q)
-        result = gam.fit(disp='off')
-        std_resid[t] = result.resid / result.conditional_volatility
-        conditional_volatility[t] = result.conditional_volatility / 100
-    return std_resid, conditional_volatility
+        garch_result[t]= gam.fit(disp='off')
+        std_resid[t] = garch_result[t].resid / garch_result[t].conditional_volatility
+        conditional_volatility[t] = garch_result[t].conditional_volatility / 100
+    return garch_result, std_resid, conditional_volatility
 
-std_resid, conditional_volatility = garch(ticker , log_losses, 1, 1)
+garch_result, std_resid, conditional_volatility = garch(ticker , log_losses, 1, 1)
 std_resid
 pd.DataFrame(std_resid).std()
 ```
@@ -158,16 +159,30 @@ sim_gauss = pv.Vinecop.simulate(Gauss_Cop, n = 10000)
 def inv_pit(ticker, std_resid, model, sim, alpha):
     F_inv = {}
     for i, t in enumerate(ticker):
-        n = len(sim[:, i])
         u_full = sim[:, i]
-        u_tail = u_full[u_full > alpha]
-        F_inv_body = np.quantile(std_resid[t], u_full)[u_full <= alpha]
+        n_sim = len(u_full)
+
+        u_t = np.quantile(std_resid[t], alpha)
+
+        n_u = len(model[t].extremes)
+        n_obs = len(std_resid[t])
+        F_hat_u = 1 - n_u / n_obs              
+
         xi = model[t].distribution.mle_parameters["c"]
         sigma = model[t].distribution.mle_parameters["scale"]
-        F_inv_tail = genpareto.ppf(u_tail, c=xi, scale=sigma)
-        F_inv_full = np.zeros(n)
-        F_inv_full[u_full <= alpha] = F_inv_body
-        F_inv_full[u_full > alpha] = F_inv_tail + np.quantile(std_resid[t], alpha)
+
+        body_mask = u_full <= F_hat_u
+        tail_mask = ~body_mask
+
+        F_inv_full = np.empty(n_sim)
+
+        # body: empirical quantile function
+        F_inv_full[body_mask] = np.quantile(std_resid[t], u_full[body_mask])
+
+        # tail: rescale U to conditional uniform, GPD ppf, then shift by threshold
+        v_tail = (u_full[tail_mask] - F_hat_u) / (1 - F_hat_u)
+        F_inv_full[tail_mask] = u_t + genpareto.ppf(v_tail, c=xi, scale=sigma)
+
         F_inv[t] = F_inv_full
     return F_inv
 
@@ -187,15 +202,20 @@ def rescale(ticker, sim_resid, conditional_volatility):
 
 
 sim_log_losses = rescale(ticker, sim_resid, conditional_volatility)
+
 sim_log_losses_gauß = rescale(ticker, sim_resid_gauss, conditional_volatility)
+
 ```
 
 ```{python}
 Loss_Portfolio = pd.DataFrame.sum(sim_log_losses, axis=1) / sim_log_losses.shape[1]
+Loss_Portfolio.plot()
 
 Loss_Portfolio_gauss = (
     pd.DataFrame.sum(sim_log_losses_gauß, axis=1) / sim_log_losses_gauß.shape[1]
 )
+
+Loss_Portfolio_gauss.plot()
 
 VaR_empirical = np.quantile(Loss_Portfolio, 0.99)
 ES_empiricial = Loss_Portfolio[Loss_Portfolio > VaR_empirical].mean()
@@ -213,7 +233,7 @@ ES_empiricial_gauss
 
 sns.histplot(Loss_Portfolio, label="Vine", alpha=0.5, stat="probability")
 sns.histplot(Loss_Portfolio_gauss, label="Gauss", alpha=0.5, stat="probability")
-plt.xlim(0.04, 0.30)
+plt.xlim(0.02, 0.20)
 plt.axvline(VaR_empirical, color="steelblue", label="Vine VaR-0.99%")
 plt.axvline(ES_empiricial, color="navy", linestyle="--", label="Vine ES-0.99%")
 plt.axvline(VaR_empirical_gauss, color="tomato", label="Gauss VaR-0.99%")
@@ -223,5 +243,57 @@ plt.show()
 ```
 
 
+```{python}
+def forecast(
+    ticker,
+    garch_result,
+    std_resid,
+    copula,
+    model,
+    threshold,
+    horizon=10,
+    n_sims=20000,
+    seed=42,
+):
+    portfolio_forecast = pd.DataFrame()
+    sigma2_t = {}
+    e = {}
+
+    for t in ticker:
+        sigma2_t[t] = (garch_result[t].conditional_volatility.iloc[-1] / 100) ** 2
+        e[t] = float(garch_result[t].resid.iloc[-1]) / 100
+
+    for h in range(horizon):
+        u_sim = pv.Vinecop.simulate(copula, n=n_sims)
+        F_inv = pd.DataFrame(inv_pit(ticker, std_resid, model, u_sim, threshold))
+        sim_log_losses = pd.DataFrame()
+
+        for t in ticker:
+            p = garch_result[t].params
+            mu, omega = p["mu"] / 100, p["omega"] / 100**2
+            a1, b1 = p["alpha[1]"], p["beta[1]"]
+            sigma2_t[t] = omega + a1 * e[t] ** 2 + b1 * sigma2_t[t]
+            e[t] = np.sqrt(sigma2_t[t]) * F_inv[t]
+            sim_log_losses[t] = mu + np.sqrt(sigma2_t[t]) * F_inv[t]
+        portfolio_forecast[h] = (
+            pd.DataFrame.sum(sim_log_losses, axis=1) / sim_log_losses.shape[1]
+        )
+    simulated_portfolio = pd.DataFrame.sum(portfolio_forecast, axis=1)
+    return simulated_portfolio
 
 
+simulated_portfolio = forecast(ticker, garch_result, std_resid, Cop, model, 0.95)
+VaR = np.quantile(simulated_portfolio, 0.99)
+ES = simulated_portfolio[simulated_portfolio > VaR].mean()
+VaR
+ES
+
+VaR_empirical * np.sqrt(10)
+ES_empiricial * np.sqrt(10)
+
+VaR_empirical
+ES
+
+
+sns.histplot(simulated_portfolio, label="Vine", alpha=0.5)
+```
