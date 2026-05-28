@@ -11,7 +11,8 @@ import pyvinecopulib as pv
 import pyextremes
 import yfinance as yf
 from arch import arch_model
-from multiprocessing import Pool
+from joblib import Parallel, delayed
+import pickle
 ```
 
 List of tickers
@@ -244,17 +245,8 @@ plt.show()
 
 
 ```{python}
-def forecast(
-    ticker,
-    garch_result,
-    std_resid,
-    copula,
-    model,
-    threshold,
-    horizon=10,
-    n_sims=20000,
-    seed=42,
-):
+def forecast(ticker, garch_result, std_resid, copula, model, threshold,
+             horizon=10, n_sims=100000, seed=42):
     portfolio_forecast = pd.DataFrame()
     sigma2_t = {}
     e = {}
@@ -264,7 +256,7 @@ def forecast(
         e[t] = -(float(garch_result[t].resid.iloc[-1]) / 100)
 
     for h in range(horizon):
-        u_sim = pv.Vinecop.simulate(copula, n=n_sims)
+        u_sim = pv.Vinecop.simulate(copula, n=n_sims, seeds=[seed, h])
         F_inv = pd.DataFrame(inv_pit(ticker, std_resid, model, u_sim, threshold))
         sim_log_losses = pd.DataFrame()
 
@@ -276,10 +268,10 @@ def forecast(
             sigma2_t[t] = omega + (a1 + gamma_eff) * e[t] ** 2 + b1 * sigma2_t[t]
             e[t] = np.sqrt(sigma2_t[t]) * F_inv[t]
             sim_log_losses[t] = mu + np.sqrt(sigma2_t[t]) * F_inv[t]
-        portfolio_forecast[h] = (
-            pd.DataFrame.sum(sim_log_losses, axis=1) / sim_log_losses.shape[1]
-        )
-    simulated_portfolio = pd.DataFrame.sum(portfolio_forecast, axis=1)
+
+        portfolio_forecast[h] = sim_log_losses.sum(axis=1) / sim_log_losses.shape[1]
+
+    simulated_portfolio = portfolio_forecast.sum(axis=1)
     return simulated_portfolio, portfolio_forecast
 
 
@@ -288,34 +280,73 @@ sim_port_gauss, daily_gauss = forecast(
     ticker, garch_result, std_resid, Gauss_Cop, model, 0.95
 )
 
-# Cumulative
-cum_loss_vine = sim_port_vine.to_numpy()
-cum_loss_gauss = sim_port_gauss.to_numpy()
-var_cum_vine, es_cum_vine = (
-    np.quantile(cum_loss_vine, 0.99),
-    cum_loss_vine[cum_loss_vine >= np.quantile(cum_loss_vine, 0.99)].mean(),
-)
-var_cum_gauss, es_cum_gauss = (
-    np.quantile(cum_loss_gauss, 0.99),
-    cum_loss_gauss[cum_loss_gauss >= np.quantile(cum_loss_gauss, 0.99)].mean(),
-)
+def risk_by_horizon(daily, q=0.99):
+    """
+    Cumulative VaR and ES at level q for each horizon.
+
+    Args:
+        daily: (n_sims, horizon) array or DataFrame of per-day portfolio losses
+        q:     confidence level
+
+    Returns:
+        var, es — each a (horizon,) array of cumulative risk measures
+    """
+    cum = np.cumsum(np.asarray(daily), axis=1)  # (n_sims, horizon)
+    var = np.quantile(cum, q, axis=0)  # (horizon,)
+    tail = np.where(cum > var, cum, np.nan)  # non-exceedances -> nan
+    es = np.nanmean(tail, axis=0)  # (horizon,)
+    return var, es
+
+def _one_run(r, ticker, garch_result, std_resid, copula, model, threshold, n_sims, base_seed):
+    sim_port, daily = forecast(
+        ticker, garch_result, std_resid, copula, model, threshold,
+        n_sims=n_sims, seed=base_seed + r,
+    )
+    var, es = risk_by_horizon(daily)
+    return var[-1], es[-1]
+
+def repeat_forecast(ticker, garch_result, std_resid, copula, model, threshold,
+                    R=100, base_seed=42, n_sims=100000, n_jobs=12):
+    results = Parallel(n_jobs=n_jobs)(
+        delayed(_one_run)(r, ticker, garch_result, std_resid, copula, model,
+                          threshold, n_sims, base_seed)
+        for r in range(R)
+    )
+    var_runs, es_runs = zip(*results)
+    return np.array(var_runs), np.array(es_runs)
+
+pickle.dumps(Cop)
+
+var_vine, es_vine = risk_by_horizon(daily_vine)
+var_gauß, es_gauß = risk_by_horizon(daily_gauss)
+
+var_vine
+var_gauß
+
+MC_var_vine, MC_es_vine = repeat_forecast(ticker = ticker, garch_result= garch_result, std_resid = std_resid, copula = Cop, model=model, threshold= 0.95)
+MC_var_gauss, MC_es_gauss = repeat_forecast(ticker = ticker, garch_result= garch_result, std_resid = std_resid, copula = Gauss_Cop, model=model, threshold= 0.95)
 
 # 1-day anchor for the naive scaling rule
-var_1d = var_cum_by_h_vine[0]
-var_path_scaled = var_1d * np.sqrt(np.arange(1, 11))
-var_cum_scaled = var_1d * np.sqrt(10)
+var_1d_vine = var_vine[0]
+var_path_scaled_vine = var_1d_vine * np.sqrt(np.arange(1, 11))
+var_cum_scaled_vine = var_1d_vine * np.sqrt(10)
+
+es_1d_vine = es_vine[0]
+es_path_scaled_vine = es_1d_vine * np.sqrt(np.arange(1, 11))
+es_cum_scaled_vine = es_1d_vine * np.sqrt(10)
 
 h_axis = np.arange(1, 11)
 fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
 # (a) Cumulative VaR by horizon
 ax = axes[0]
-ax.plot(h_axis, var_cum_by_h_vine, "o-", color="steelblue", label="MC — Vine")
-ax.plot(h_axis, var_cum_by_h_gauss, "s--", color="orange", label="MC — Gauss")
-ax.plot(h_axis, var_path_scaled, "x:", color="black", label="√t scaling")
+ax.plot(h_axis, var_vine, "o-", color="steelblue", label="MC — VaR - Vine")
+ax.plot(h_axis, es_vine, "s--", color="navy", label="MC — ES - Vine")
+ax.plot(h_axis, var_path_scaled_vine, "x:", color="black", label="√t scaling VaR")
+ax.plot(h_axis, es_path_scaled_vine, "X:", color="black", label="√t scaling ES")
 ax.set_xlabel("Horizon h (trading days)")
-ax.set_ylabel("99% VaR of cumulative loss")
-ax.set_title("Cumulative VaR by horizon")
+ax.set_ylabel("99% VaR/ES of cumulative loss")
+ax.set_title("Cumulative VaR/ES by horizon")
 ax.legend()
 
 # (b) 10-day cumulative loss distribution
@@ -338,20 +369,68 @@ sns.histplot(
     label="Gauss",
     ax=ax,
 )
-ax.axvline(var_cum_vine, color="steelblue", lw=2, label=f"VaR Vine  {var_cum_vine:.4f}")
-ax.axvline(var_cum_gauss, color="orange", lw=2, label=f"VaR Gauss {var_cum_gauss:.4f}")
+ax.axvline(var_vine[-1], color="steelblue", lw=2, label=f"VaR Vine  {var_vine[-1]:.4f}")
+ax.axvline(var_gauß[-1], color="tomato", lw=2, label=f"VaR Gauss {var_gauß[-1]:.4f}")
+ax.axvline(es_vine[-1], color="navy", lw=2, label=f"ES Vine  {es_vine[-1]:.4f}")
+ax.axvline(es_gauß[-1], color="darkred", lw=2, label=f"ES Gauss  {es_gauß[-1]:.4f}")
+
 ax.axvline(
-    var_cum_scaled,
+    var_cum_scaled_vine,
     color="black",
-    ls=":",
+    ls="-.",
     lw=1.5,
-    label=f"VaR √t   {var_cum_scaled:.4f}",
+    label=f"VaR √t   {var_cum_scaled_vine:.4f}",
+)
+ax.axvline(
+    es_cum_scaled_vine,
+    color="black",
+    ls="--",
+    lw=1.5,
+    label=f"ES √t   {es_cum_scaled_vine:.4f}",
 )
 ax.set_xlabel("10-day cumulative log-loss")
 ax.set_title("Simulated 10-day loss distribution")
 ax.legend()
 
 fig.suptitle("10-day VaR forecast — MC vs √t scaling", y=1.02)
+plt.tight_layout()
+plt.show()
+```
+
+
+
+```{python}
+diff_var = MC_var_vine - MC_var_gauss   # gepaart dank CRN
+diff_es  = MC_es_vine  - MC_es_gauss
+
+fig, axes = plt.subplots(2, 2, figsize=(13, 9))
+
+# VaR — Verteilungen über Runs
+ax = axes[0, 0]
+ax.boxplot([MC_var_vine, MC_var_gauss], showmeans=True)
+ax.set_xticklabels(["Vine", "Gauss"]); ax.set_ylabel("99% VaR")
+ax.set_title("10-day VaR — distribution over runs")
+
+# VaR — gepaarte Differenz
+ax = axes[0, 1]
+ax.hist(diff_var, bins=30, color="steelblue", alpha=0.7)
+ax.axvline(0, color="black", lw=1.5, ls="--")
+ax.axvline(diff_var.mean(), color="red", lw=2, label=f"mean {diff_var.mean():.4f}")
+ax.set_title("VaR(Vine) − VaR(Gauss), paired"); ax.legend()
+
+# ES — Verteilungen über Runs
+ax = axes[1, 0]
+ax.boxplot([MC_es_vine, MC_es_gauss], showmeans=True)
+ax.set_xticklabels(["Vine", "Gauss"]); ax.set_ylabel("99% ES")
+ax.set_title("10-day ES — distribution over runs")
+
+# ES — gepaarte Differenz
+ax = axes[1, 1]
+ax.hist(diff_es, bins=30, color="navy", alpha=0.7)
+ax.axvline(0, color="black", lw=1.5, ls="--")
+ax.axvline(diff_es.mean(), color="red", lw=2, label=f"mean {diff_es.mean():.4f}")
+ax.set_title("ES(Vine) − ES(Gauss), paired"); ax.legend()
+
 plt.tight_layout()
 plt.show()
 ```
