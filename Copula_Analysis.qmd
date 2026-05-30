@@ -55,9 +55,7 @@ is motivated by expected heterogeneity in tail dependence: equities are likely t
 exhibit strong co-movement in the tails due to shared market and sector-specific
 risks, whereas commodities — particularly gold — are expected to show weak or
 negative tail dependence with equities, reflecting their historical role as safe-haven
-assets during market stress. This heterogeneity makes the portfolio a suitable
-testbed for comparing copula specifications that differ precisely in their ability to
-capture varying pairwise tail dependence structures.
+assets during market stress. 
 
 ```{python}
 ticker = [
@@ -93,7 +91,31 @@ years of daily data with `{python} f"{n_obs:,}"` observations per asset.
 
 ## GJR-GARCH
 
+To address the problem of volatility clustering in financial time series — and to
+meet the i.i.d. requirements of the subsequent POT analysis — a GJR-GARCH(1,1,1)
+model is applied to each asset. GJR-GARCH extends the standard GARCH model by
+allowing negative shocks to increase future volatility by more than positive shocks
+of equal magnitude. This asymmetry is known as the leverage effect: when asset
+prices fall, the debt-to-equity ratio of firms increases, raising financial risk and
+hence volatility. In addition, investors may react more strongly to losses than to
+gains of the same size.
 
+The GJR-GARCH ($p=1$, $o=1$, $q=1$) model is specified as
+$$
+X_t = \sigma_t \epsilon_t,
+$$
+
+where the conditional variance evolves according to
+$$
+\sigma^2_t = \alpha_0 + \alpha_1 \epsilon^2_{t-1}
++ \gamma_1 \epsilon^2_{t-1} \mathbf{1}[\epsilon_{t-1} < 0]
++ \beta_1 \sigma^2_{t-1}.
+$$
+
+When the shock at $t-1$ is negative, the indicator $\mathbf{1}[\epsilon_{t-1} < 0]$
+equals one and the effective ARCH coefficient becomes $\alpha_1 + \gamma_1 > \alpha_1$,
+producing a larger increase in conditional variance than a positive shock of the
+same size.
 
 ```{python}
 def garch(ticker, log_returns, p, q, o):
@@ -108,10 +130,44 @@ def garch(ticker, log_returns, p, q, o):
     return garch_result, std_resid, conditional_volatility
 
 garch_result, std_resid, conditional_volatility = garch(ticker , log_returns, 1, 1, 1)
-std_resid
-pd.DataFrame(std_resid).std()
+print(pd.DataFrame(std_resid).std())
 ```
 
+The model is fitted to each of the ten assets separately. For numerical stability,
+log-returns are multiplied by 100 prior to estimation; the conditional volatility is
+rescaled back afterwards. The full fit object, the conditional volatility, and the
+standardised residuals are retained for subsequent analysis.
+
+An important sign convention applies. The GJR-GARCH leverage term is triggered by
+$\mathbf{1}[\epsilon_{t-1} < 0]$, i.e. by *negative* residuals. If the model were
+fitted directly on log-losses (positive = loss), negative residuals would correspond
+to gains, so the leverage effect would incorrectly amplify volatility after gains
+rather than losses. For this reason, the model is fitted on log-returns, where
+negative residuals correctly identify losses. After fitting, the standardised
+residuals are negated to convert to the loss scale required for POT analysis —
+so that large positive values correspond to large losses. A short sanity check
+confirms that the standard deviation of the negated residuals is close to 1 for
+all assets, as expected under correct standardisation.
+
+## POT 
+
+A GPD model is fitted separately to the standardised residuals of each asset via
+the Peaks-over-Threshold method. The central modelling choice is the threshold
+$u$: exceedances above $u$ are theoretically justified to follow a GPD distribution
+by the Pickands–Balkema–de Haan theorem, but $u$ must balance two competing
+demands. A high threshold reduces the bias of the GPD approximation but leaves
+few exceedances for estimation; a low threshold yields more data but risks fitting
+the GPD to observations where the approximation does not yet hold — the familiar
+bias–variance trade-off in extreme value analysis.
+
+As a pragmatic solution, the 95th percentile of each asset's residual distribution
+is used as a common threshold. This ensures a sufficient number of exceedances for
+stable MLE estimation while sitting far enough into the tail for the GPD
+approximation to plausibly hold. A limitation of this uniform choice is that the
+threshold may be too conservative for some assets — yielding fewer exceedances
+than necessary — or not conservative enough for others, in which case the GPD
+approximation may not yet be valid and parameter estimates may be biased.
+Parameter estimation is carried out via MLE using the `pyextremes` package.
 
 ```{python}
 alpha = 0.95
@@ -129,7 +185,9 @@ def GPD_fit(ticker, std_resid, alpha):
 
 
 u, model = GPD_fit(ticker, std_resid, alpha)
+```
 
+```{python}
 assets = [
     "NVDA",
     "GOOGL",
@@ -157,8 +215,27 @@ for ax, c in zip(axes.flatten(), commodities):
     axes.flatten()[-1].set_visible(False)
     ax.set_title(c)
 plt.show()
+```
 
+The QQ-plots indicate a reasonable overall fit across most assets, with minor
+upper-tail deviations that are typical for GPD models: the most extreme
+observations tend to exceed the fitted distribution, as the GPD is anchored to
+the bulk of exceedances rather than the very deepest tail.
 
+A notable exception is aluminium (ALI=F), where the fit is markedly poor
+($R^2 = 0.763$). A single observation with a standardised residual of
+approximately 21 lies far above its theoretical GPD quantile of around 5.
+This is likely attributable to the extreme price spike in aluminium futures
+following the Russian invasion of Ukraine in February 2022 and the subsequent
+sanctions against Russian aluminium producers — a singular, politically driven
+event that falls outside the scope of any stationary tail model. As a
+consequence, tail risk for aluminium will be systematically underestimated for
+events of that severity, which constitutes a meaningful limitation of the
+downstream VaR and ES estimates.
+
+## Pseudo observations
+
+```{python}
 def pit(ticker, model, std_resid, u):
     F = {}
     for t in ticker:
@@ -182,6 +259,7 @@ def pit(ticker, model, std_resid, u):
 F_ticker = pit(ticker, model, std_resid, u)
 pd.DataFrame(F_ticker).describe()
 ```
+
 
 
 ```{python}
