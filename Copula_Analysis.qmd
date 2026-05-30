@@ -4,9 +4,9 @@ import numpy as np
 from matplotlib.pyplot import axvline
 from pyvinecopulib import Vinecop
 from scipy.stats import rankdata, genpareto
-from pyextremes import EVA 
+from pyextremes import EVA
 import matplotlib.pyplot as plt
-import seaborn as sns 
+import seaborn as sns
 import pyvinecopulib as pv
 import pyextremes
 import yfinance as yf
@@ -15,7 +15,49 @@ from joblib import Parallel, delayed
 import pickle
 ```
 
-List of tickers
+## Problem Statement
+
+Rare and extreme losses are a fundamental challenge in risk analysis and portfolio
+management. This challenge is amplified in realistic multivariate settings: beyond
+the well-documented tendency of individual financial instruments to exhibit heavy
+tails and volatility clustering, the joint distribution of portfolio constituents
+introduces an additional layer of complexity. Understanding the dependence
+structure of the joint distribution — particularly in the tails — is crucial for
+accurately assessing portfolio tail risk.
+
+This project addresses that challenge using a two-stage semiparametric approach.
+At the marginal level, GJR-GARCH filtering is applied to each asset to remove
+conditional heteroskedasticity, followed by GPD modelling of the standardised
+residuals to capture heavy-tailed behaviour. At the joint level, two copula
+specifications are compared: a vine copula, estimated automatically from the data,
+and a Gaussian copula as a benchmark. The central claim is that the Gaussian
+copula — by construction exhibiting asymptotic independence in the tails — 
+systematically underestimates extreme portfolio losses relative to the vine copula,
+even when both models share the same GPD marginal structure. This underestimation
+is purely a consequence of the dependence model, not the marginals.
+
+The analysis is conducted on a ten-dimensional portfolio of five US equities
+(NVDA, GOOGL, JPM, WMT, XOM) and five commodity futures (crude oil, silver,
+aluminium, gold, copper). Portfolio VaR and ES are estimated via Monte Carlo
+simulation for one- and ten-day horizons under both copula specifications. 
+
+## Choosing Instruments
+
+The focus of this project lies on the methodological problem of tail risk modelling
+in multivariate portfolios; instrument selection is therefore kept deliberately simple.
+All assets are denominated in USD, avoiding the additional complexity of currency
+exchange risk that would arise with international investments — a natural extension
+for follow-up work, alongside more complex instruments such as options.
+
+The portfolio consists of five US equities (NVDA, GOOGL, JPM, WMT, XOM) and
+five commodity futures (crude oil, silver, aluminium, gold, copper). The selection
+is motivated by expected heterogeneity in tail dependence: equities are likely to
+exhibit strong co-movement in the tails due to shared market and sector-specific
+risks, whereas commodities — particularly gold — are expected to show weak or
+negative tail dependence with equities, reflecting their historical role as safe-haven
+assets during market stress. This heterogeneity makes the portfolio a suitable
+testbed for comparing copula specifications that differ precisely in their ability to
+capture varying pairwise tail dependence structures.
 
 ```{python}
 ticker = [
@@ -31,14 +73,26 @@ ticker = [
     'HG=F',
 ]
 ```
-
-
 ```{python}
-prices = yf.download(ticker, start="2016-01-01")
+prices = yf.download(ticker, start="2014-05-06")
 close = prices['Close']
-log_losses = -np.log(close / close.shift(1)).dropna()
+
 log_returns = np.log(close / close.shift(1)).dropna()
+
+n_years = (log_returns.index[-1] - log_returns.index[0]).days / 365.25
+n_obs = len(log_returns)
 ```
+
+Log-returns, defined as $r_t = \log(P_t / P_{t-1})$, are used throughout in
+preference to simple returns for their additivity over time. Data is downloaded
+from Yahoo Finance via `yfinance`. The sample start was initially set to
+2010-01-01 to maximise the available window; however, aluminium futures (ALI=F)
+are only available from 2014-05-06, so the start date was adjusted accordingly
+to ensure a balanced panel. This yields approximately `{python} f"{n_years:.0f}"`
+years of daily data with `{python} f"{n_obs:,}"` observations per asset.
+
+## GJR-GARCH
+
 
 
 ```{python}
@@ -430,6 +484,26 @@ ax.hist(diff_es, bins=30, color="navy", alpha=0.7)
 ax.axvline(0, color="black", lw=1.5, ls="--")
 ax.axvline(diff_es.mean(), color="red", lw=2, label=f"mean {diff_es.mean():.4f}")
 ax.set_title("ES(Vine) − ES(Gauss), paired"); ax.legend()
+
+plt.tight_layout()
+plt.show()
+
+fig, axes = plt.subplots(1, 2, figsize=(12, 5.5))
+
+for ax, vine, gauss, name in [
+    (axes[0], MC_var_vine, MC_var_gauss, "VaR"),
+    (axes[1], MC_es_vine,  MC_es_gauss,  "ES"),
+]:
+    ax.scatter(gauss, vine, alpha=0.6, color="steelblue", edgecolor="navy", s=40)
+    # y=x diagonal across the joint range
+    lo = min(gauss.min(), vine.min())
+    hi = max(gauss.max(), vine.max())
+    ax.plot([lo, hi], [lo, hi], "k--", lw=1, label="y = x")
+    ax.set_xlabel(f"Gauss {name}")
+    ax.set_ylabel(f"Vine {name}")
+    ax.set_title(f"10-day {name} — paired runs (CRN)")
+    ax.legend()
+    ax.set_aspect("equal")   # damit die Diagonale visuell stimmt
 
 plt.tight_layout()
 plt.show()
