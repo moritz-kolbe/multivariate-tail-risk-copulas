@@ -1,7 +1,6 @@
 ```{python}
 import pandas as pd
 import numpy as np
-from matplotlib.pyplot import axvline
 from pyvinecopulib import Vinecop
 from scipy.stats import rankdata, genpareto
 from pyextremes import EVA
@@ -12,7 +11,6 @@ import pyextremes
 import yfinance as yf
 from arch import arch_model
 from joblib import Parallel, delayed
-import pickle
 ```
 
 ## Problem Statement
@@ -119,17 +117,19 @@ same size.
 
 ```{python}
 def garch(ticker, log_returns, p, q, o):
+    mu = {}
     std_resid = {}
     conditional_volatility = {}
     garch_result = {}
     for t in ticker:
         gam = arch_model(log_returns[t]*100, vol='GARCH', p=p, q=q, o=o)
         garch_result[t]= gam.fit(disp='off')
+        mu[t] = -(garch_result[t].params['mu'])
         std_resid[t] = -(garch_result[t].resid / garch_result[t].conditional_volatility)
         conditional_volatility[t] = garch_result[t].conditional_volatility / 100
-    return garch_result, std_resid, conditional_volatility
+    return garch_result, std_resid, conditional_volatility, mu
 
-garch_result, std_resid, conditional_volatility = garch(ticker , log_returns, 1, 1, 1)
+garch_result, std_resid, conditional_volatility, mu_ts = garch(ticker , log_returns, 1, 1, 1)
 print(pd.DataFrame(std_resid).std())
 ```
 
@@ -149,7 +149,7 @@ so that large positive values correspond to large losses. A short sanity check
 confirms that the standard deviation of the negated residuals is close to 1 for
 all assets, as expected under correct standardisation.
 
-## POT 
+## POT Analysis
 
 A GPD model is fitted separately to the standardised residuals of each asset via
 the Peaks-over-Threshold method. The central modelling choice is the threshold
@@ -233,7 +233,32 @@ consequence, tail risk for aluminium will be systematically underestimated for
 events of that severity, which constitutes a meaningful limitation of the
 downstream VaR and ES estimates.
 
-## Pseudo observations
+## Creating Pseudo Observations
+
+Before fitting copula models, the standardised residuals of each asset must be
+transformed to uniform margins on $(0, 1)$ — a requirement for Sklar's theorem
+to hold. This is achieved via the probability integral transform (PIT): if $X$
+has a continuous distribution function $F$, then $F(X) \sim U(0,1)$, since
+$P(F^{\leftarrow}(U) \leq x) = P(U \leq F(x)) = F(x)$.
+
+A semiparametric PIT is used rather than a purely empirical one. The empirical
+CDF is bounded above by $n/(n+1)$, making it unable to assign probabilities
+to observations beyond the largest observed value. The GPD-based tail removes
+this limitation by extrapolating smoothly towards 1 for extreme observations.
+
+Concretely, a distinction is made between the body and the tail of each marginal
+distribution. For observations below the threshold $u_t$, the empirical CDF is
+used: ranks are computed and divided by $n+1$, so that body values lie in
+$(0, (n - n_u)/(n+1)]$. For tail observations ($z > u_t$), the semiparametric
+CDF is given by
+$$
+\hat{F}(z) = 1 - \frac{n_u}{n}
+\left(1 + \hat{\xi}\,\frac{z - u_t}{\hat{\sigma}}\right)^{-1/\hat{\xi}},
+$$
+
+where $n_u/n$ is the empirical probability of exceeding $u_t$. At the threshold,
+the tail starts at $1 - n_u/n = (n-n_u)/n$, which is approximately continuous
+with the body endpoint $(n-n_u)/(n+1)$ for large $n$.
 
 ```{python}
 def pit(ticker, model, std_resid, u):
@@ -260,29 +285,96 @@ F_ticker = pit(ticker, model, std_resid, u)
 pd.DataFrame(F_ticker).describe()
 ```
 
+## Fitting Copulas Models
+Two copula specifications are fitted to the pseudo-observations. The first is an
+automatically selected vine copula; the second is a Gaussian copula serving as
+benchmark. Both are estimated using `pyvinecopulib`.
 
+The vine copula is constructed via the algorithm of Dissmann et al. (2013), which
+sequentially selects pair-copulas in a tree structure, conditioning each pair on
+the variables already accounted for by higher-level trees. Crucially, each pair
+can be assigned a different copula family — for instance a Student-$t$ copula for
+two equity indices with strong joint tail behaviour, and an independence copula
+for an equity-gold pair. This flexibility is the key advantage over the Gaussian
+copula, which imposes the same dependence structure on all pairs and, by
+construction of the Gaussian copula density, exhibits asymptotic independence:
+$\lambda_U = 0$ for every pair regardless of the correlation parameter. This
+property holds even when non-Gaussian marginals such as GPD are used, since
+asymptotic independence is a feature of the copula itself, not the marginals.
 
+The Gaussian copula is parametrised solely by the correlation matrix $P$. It is
+estimated via Kendall's $\tau$, exploiting the analytical relationship
+$$
+\rho = \sin\!\left(\frac{\pi}{2}\,\tau\right),
+$$
+
+which allows a rank-based, robust estimate of $P$ without requiring full MLE.
 ```{python}
 # Automated selection
 mat = np.array(list(F_ticker.values())).T
-Cop = pv.Vinecop(d=10)
-Cop.select(data=mat)
-Cop
+vine_cop = pv.Vinecop(d=10)
+vine_cop.select(data=mat)
+
+controls = pv.FitControlsVinecop(family_set=[pv.BicopFamily.gaussian])
+gauss_Cop = pv.Vinecop.from_data(mat, controls=controls)
+```
+
+To illustrate the difference between the two specifications, the fitted pair-copula
+for NVDA and GOOGL is shown for both models. The upper-right panel displays
+simulated pseudo-observations on the uniform scale; the lower-left panel shows
+copula density contours in normal scores.
+
+For the vine copula, the pseudo-observation scatter shows clear clustering in the
+upper right corner — both assets experiencing large losses simultaneously — and
+the density contours are visibly elongated toward that corner. This indicates
+positive upper tail dependence ($\lambda_U > 0$): extreme losses in NVDA and
+GOOGL tend to co-occur more often than independence would predict.
+
+The Gaussian copula, fitted with the same Kendall's $\tau = 0.34$, produces
+symmetric elliptical contours with no concentration in the corners. This reflects
+its structural property of asymptotic independence ($\lambda_U = 0$): conditional
+on one asset experiencing an extreme loss, the probability that the other does too
+converges to zero as the threshold increases. The two models capture the same
+average dependence but disagree fundamentally about joint tail behaviour — which
+is precisely what matters for portfolio tail risk.
+
+```{python}
 pair_cop = Cop.get_pair_copula(tree=0, edge=0)
 sim = pv.Bicop.simulate(pair_cop, n = 100000)
 pv.pairs_copula_data(sim)
-pv.Vinecop.bic(Cop, mat)
 
-bicop = pv.Bicop(pv.BicopFamily.gaussian)
-pcs = [[bicop, bicop], [bicop]]
-controls = pv.FitControlsVinecop(family_set=[pv.BicopFamily.gaussian])
-Gauss_Cop = pv.Vinecop.from_data(mat, controls=controls)
-Gauss_Cop
 pair_cop = Gauss_Cop.get_pair_copula(tree=0, edge = 0)
 sim = pv.Bicop.simulate(pair_cop, n = 100000)
 pv.pairs_copula_data(sim)
-pv.Vinecop.bic(Gauss_Cop, mat)
 ```
+
+## Simulate from Copulas 
+
+Having fitted both copula models, samples of pseudo-observations on $(0,1)^{10}$
+are drawn from each. These are then converted back to the original residual scale
+via the inverse semiparametric PIT, recovering simulated standardised residuals
+with the joint dependence structure implied by the respective copula.
+
+The inversion requires care in the tail. For a simulated value $U \leq \hat{F}(u)$,
+the empirical quantile function is applied directly. For $U > \hat{F}(u)$, one
+cannot simply call `genpareto.ppf(U)`: since $U \in (\hat{F}(u), 1) \approx (0.95, 1)$,
+the GPD quantile function would only return large excesses, never producing values
+close to the threshold — small tail exceedances would be impossible. Instead, $U$
+is rescaled to a conditional uniform on $(0,1)$:
+$$
+v = \frac{U - \hat{F}(u)}{1 - \hat{F}(u)},
+$$
+
+which is the conditional probability of being at most as extreme as $U$, given
+that the threshold has already been exceeded. The inverse then follows as
+$$
+z = u + \frac{\hat{\sigma}}{\hat{\xi}}\left[(1-v)^{-\hat{\xi}} - 1\right]
+= u + \texttt{genpareto.ppf}(v,\, \hat{\xi},\, \hat{\sigma}).
+$$
+
+At $U = \hat{F}(u)$ exactly, $v = 0$ and $\texttt{genpareto.ppf}(0) = 0$, so
+$z = u$ — the inverse PIT is continuous at the threshold.
+
 
 ```{python}
 sim = pv.Vinecop.simulate(Cop, n=10000)
@@ -325,20 +417,36 @@ sim_resid = pd.DataFrame(F_inv)
 
 F_inv_gauss = inv_pit(ticker, std_resid, model, sim_gauss, alpha)
 sim_resid_gauss = pd.DataFrame(F_inv_gauss)
+```
 
+The simulated standardised residuals are converted back to the log-loss scale by
+applying the GARCH location-scale relationship:
+$$
+\tilde{L}_{T+1} = \hat{\mu} + \hat{\sigma}_T \cdot Z,
+$$
+where $\hat{\sigma}_T$ is the last observed conditional volatility — the natural
+one-step-ahead forecast under GARCH — and $Z$ is the simulated standardised
+residual from the inverse PIT. The mean term $\hat{\mu}$ is included for
+completeness; in practice it is negligible relative to $\hat{\sigma}_T$ at the
+tail quantiles of interest, but omitting it entirely would be incorrect.
 
-def rescale(ticker, sim_resid, conditional_volatility):
+```{python}
+def rescale(ticker, sim_resid, conditional_volatility, mu):
     sim_losses = pd.DataFrame(index=range(len(sim_resid)), columns=ticker)
     for t in sim_resid:
-        sim_losses[t] = sim_resid[t] * conditional_volatility[t].iloc[-1]
+        sim_losses[t] = mu[t] + sim_resid[t] * conditional_volatility[t].iloc[-1]
     return sim_losses
 
 
-sim_log_losses = rescale(ticker, sim_resid, conditional_volatility)
+sim_log_losses = rescale(ticker, sim_resid, conditional_volatility, mu_ts)
 
-sim_log_losses_gauß = rescale(ticker, sim_resid_gauss, conditional_volatility)
+sim_log_losses_gauss = rescale(ticker, sim_resid_gauss, conditional_volatility, mu_ts)
 
 ```
+
+## Loss Aggregation and Risk Measures
+
+From 
 
 ```{python}
 Loss_Portfolio = pd.DataFrame.sum(sim_log_losses, axis=1) / sim_log_losses.shape[1]
