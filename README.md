@@ -24,16 +24,17 @@ quantifies how much the Gaussian assumption underestimates portfolio tail risk.
 4. **Vine copula** (Dissmann et al., 2013) fitted to pseudo-observations via
    `pyvinecopulib`; Gaussian copula as benchmark, estimated via Kendall's τ
 5. **Monte Carlo simulation**: 10-day forward paths via GARCH recursion and
-   inverse PIT; Common Random Numbers (CRN) used across copula specifications
+   inverse PIT; R = 100 replications of 100,000 simulated paths each (10 million
+   paths total); Common Random Numbers (CRN) used across copula specifications
    to isolate model differences from sampling noise
 6. **VaR and ES** estimated by cumulating losses along each simulated path before
    taking tail quantiles
 
 ## Data
 
-Ten assets in USD (2014–2025): NVDA, GOOGL, JPM, WMT, XOM (US equities) and
-CL=F, SI=F, ALI=F, GC=F, HG=F (commodity futures). All in USD to avoid currency
-risk.
+Ten assets in USD (2014–2026): NVDA, GOOGL, JPM, WMT, XOM (US equities) and
+CL=F, SI=F, ALI=F, GC=F, HG=F (commodity futures). All denominated in USD to
+avoid currency risk.
 
 ## Main Results
 
