@@ -1,0 +1,11 @@
+yfinance
+arch
+scipy
+numpy
+pandas
+matplotlib
+seaborn
+pyextremes
+pyvinecopulib
+joblib
+quarto

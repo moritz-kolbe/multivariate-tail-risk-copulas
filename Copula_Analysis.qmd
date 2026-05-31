@@ -746,6 +746,34 @@ plt.tight_layout()
 plt.show()
 ```
 
+## Conclusion
 
+This project has shown that the choice of dependence model has a material impact
+on portfolio tail risk estimates. Assuming asymptotic independence in the tails —
+as the Gaussian copula does by construction — leads to systematic underestimation
+of both VaR and ES. Across $R = 100$ independent simulation runs with Common
+Random Numbers, the vine copula produced higher 10-day 99% tail risk estimates
+than the Gaussian copula in every single run, with a mean paired difference of
+approximately 4% for VaR and 6% for ES.
+
+The larger gap for ES is not coincidental. VaR captures whether a threshold is
+exceeded; ES averages over the magnitude of exceedances. Under positive upper
+tail dependence, assets are more likely to experience large losses simultaneously
+— driving up the size of joint exceedances beyond what the Gaussian copula can
+reproduce. ES is directly sensitive to this effect; VaR only partially so.
+
+Several limitations should be noted. The portfolio is equally weighted and static
+— with optimised or dynamically adjusted weights, both the quantitative results
+and the relative advantage of the vine copula could differ. All assets are
+denominated in USD, deliberately excluding currency risk; extending the analysis
+to international investments would require modelling exchange rate dependence as
+well. Finally, the aluminium futures (ALI=F) showed a poor GPD fit due to a
+singular price spike in 2022, which means tail risk for that asset is likely
+underestimated.
+
+Natural extensions include dynamic copula specifications that allow the dependence
+structure to evolve over time, more complex instruments such as financial
+derivatives, and a rolling-window backtest of portfolio-level VaR and ES to
+formally validate the joint model out of sample.
 
 
