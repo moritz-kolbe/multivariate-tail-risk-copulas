@@ -316,7 +316,7 @@ vine_cop = pv.Vinecop(d=10)
 vine_cop.select(data=mat)
 
 controls = pv.FitControlsVinecop(family_set=[pv.BicopFamily.gaussian])
-gauss_Cop = pv.Vinecop.from_data(mat, controls=controls)
+gauss_cop = pv.Vinecop.from_data(mat, controls=controls)
 ```
 
 To illustrate the difference between the two specifications, the fitted pair-copula
@@ -339,11 +339,11 @@ average dependence but disagree fundamentally about joint tail behaviour — whi
 is precisely what matters for portfolio tail risk.
 
 ```{python}
-pair_cop = Cop.get_pair_copula(tree=0, edge=0)
+pair_cop = vine_cop.get_pair_copula(tree=0, edge=0)
 sim = pv.Bicop.simulate(pair_cop, n = 100000)
 pv.pairs_copula_data(sim)
 
-pair_cop = Gauss_Cop.get_pair_copula(tree=0, edge = 0)
+pair_cop = gauss_cop.get_pair_copula(tree=0, edge = 0)
 sim = pv.Bicop.simulate(pair_cop, n = 100000)
 pv.pairs_copula_data(sim)
 ```
@@ -377,9 +377,10 @@ $z = u$ — the inverse PIT is continuous at the threshold.
 
 
 ```{python}
-sim = pv.Vinecop.simulate(Cop, n=10000)
+sim = pv.Vinecop.simulate(vine_cop, n=10000)
 sim.shape
-sim_gauss = pv.Vinecop.simulate(Gauss_Cop, n = 10000)
+sim_gauss = pv.Vinecop.simulate(gauss_cop, n=10000)
+
 
 def inv_pit(ticker, std_resid, model, sim, alpha):
     F_inv = {}
@@ -391,7 +392,7 @@ def inv_pit(ticker, std_resid, model, sim, alpha):
 
         n_u = len(model[t].extremes)
         n_obs = len(std_resid[t])
-        F_hat_u = 1 - n_u / n_obs              
+        F_hat_u = 1 - n_u / n_obs
 
         xi = model[t].distribution.mle_parameters["c"]
         sigma = model[t].distribution.mle_parameters["scale"]
@@ -462,24 +463,28 @@ specifications are shown below.
 
 ```{python}
 Loss_Portfolio = pd.DataFrame.sum(sim_log_losses, axis=1) / sim_log_losses.shape[1]
-Loss_Portfolio_gauss = (pd.DataFrame.sum(sim_log_losses_gauss, axis=1) / sim_log_losses_gauß.shape[1])
+Loss_Portfolio_gauss = (
+    pd.DataFrame.sum(sim_log_losses_gauss, axis=1) / sim_log_losses_gauss.shape[1]
+)
 
 VaR_vine_1d = np.quantile(Loss_Portfolio, 0.99)
-ES_vine_1d = Loss_Portfolio[Loss_Portfolio > VaR_empirical].mean()
+ES_vine_1d = Loss_Portfolio[Loss_Portfolio > VaR_vine_1d].mean()
 
 print(f"Next-day Vine VaR_{0.99}: {VaR_vine_1d:.3f}")
 print(f"Next-day Vine ES_{0.99}: {ES_vine_1d:.3f}")
 
 VaR_gauss_1d = np.quantile(Loss_Portfolio_gauss, 0.99)
-ES_gauss_1d = Loss_Portfolio_gauss[
-    Loss_Portfolio_gauss > VaR_empirical_gauss
-].mean()
+ES_gauss_1d = Loss_Portfolio_gauss[Loss_Portfolio_gauss > VaR_gauss_1d].mean()
 
 print(f"Next-day Gauss VaR_{0.99}: {VaR_gauss_1d:.3f}")
 print(f"Next-day Gauss ES_{0.99}: {ES_gauss_1d:.3f}")
 
-sns.histplot(Loss_Portfolio, label="Loss-Distribution Vine", alpha=0.5, stat="probability")
-sns.histplot(Loss_Portfolio_gauss, label="Loss-Distribution Gauss", alpha=0.4, stat="probability")
+sns.histplot(
+    Loss_Portfolio, label="Loss-Distribution Vine", alpha=0.5, stat="probability"
+)
+sns.histplot(
+    Loss_Portfolio_gauss, label="Loss-Distribution Gauss", alpha=0.4, stat="probability"
+)
 plt.xlim(0.00, 0.20)
 plt.axvline(VaR_vine_1d, color="steelblue", lw=2, label=f"VaR Vine  {VaR_vine_1d:.3f}")
 plt.axvline(VaR_gauss_1d, color="tomato", lw=2, label=f"VaR Gauss {VaR_gauss_1d:.3f}")
@@ -510,8 +515,17 @@ approach is to first cumulate losses along each simulated path and then compute
 VaR and ES over the resulting 10-day loss distribution.
 
 ```{python}
-def forecast(ticker, garch_result, std_resid, copula, model, threshold,
-             horizon=10, n_sims=100000, seed=42):
+def forecast(
+    ticker,
+    garch_result,
+    std_resid,
+    copula,
+    model,
+    threshold,
+    horizon=10,
+    n_sims=100000,
+    seed=42,
+):
     portfolio_forecast = pd.DataFrame()
     sigma2_t = {}
     e = {}
@@ -539,8 +553,14 @@ def forecast(ticker, garch_result, std_resid, copula, model, threshold,
     simulated_portfolio = portfolio_forecast.sum(axis=1)
     return simulated_portfolio, portfolio_forecast
 
-sim_port_vine, daily_vine = forecast(ticker, garch_result, std_resid, Cop, model, 0.95)
-sim_port_gauss, daily_gauss = forecast(ticker, garch_result, std_resid, Gauss_Cop, model, 0.95)
+
+sim_port_vine, daily_vine = forecast(
+    ticker, garch_result, std_resid, vine_cop, model, 0.95
+)
+sim_port_gauss, daily_gauss = forecast(
+    ticker, garch_result, std_resid, gauss_cop, model, 0.95
+)
+
 
 def risk_by_horizon(daily, q=0.99):
     """
@@ -559,29 +579,74 @@ def risk_by_horizon(daily, q=0.99):
     es = np.nanmean(tail, axis=0)  # (horizon,)
     return var, es
 
+
 var_vine, es_vine = risk_by_horizon(daily_vine)
 var_gauss, es_gauss = risk_by_horizon(daily_gauss)
 
-def _one_run(r, ticker, garch_result, std_resid, copula, model, threshold, n_sims, base_seed):
+
+def _one_run(
+    r, ticker, garch_result, std_resid, copula, model, threshold, n_sims, base_seed
+):
     sim_port, daily = forecast(
-        ticker, garch_result, std_resid, copula, model, threshold,
-        n_sims=n_sims, seed=base_seed + r,
+        ticker,
+        garch_result,
+        std_resid,
+        copula,
+        model,
+        threshold,
+        n_sims=n_sims,
+        seed=base_seed + r,
     )
     var, es = risk_by_horizon(daily)
     return var[-1], es[-1]
 
-def repeat_forecast(ticker, garch_result, std_resid, copula, model, threshold,
-                    R=100, base_seed=42, n_sims=100000, n_jobs=12):
+
+def repeat_forecast(
+    ticker,
+    garch_result,
+    std_resid,
+    copula,
+    model,
+    threshold,
+    R=100,
+    base_seed=42,
+    n_sims=100000,
+    n_jobs=12,
+):
     results = Parallel(n_jobs=n_jobs)(
-        delayed(_one_run)(r, ticker, garch_result, std_resid, copula, model,
-                          threshold, n_sims, base_seed)
+        delayed(_one_run)(
+            r,
+            ticker,
+            garch_result,
+            std_resid,
+            copula,
+            model,
+            threshold,
+            n_sims,
+            base_seed,
+        )
         for r in range(R)
     )
     var_runs, es_runs = zip(*results)
     return np.array(var_runs), np.array(es_runs)
 
-MC_var_vine, MC_es_vine = repeat_forecast(ticker = ticker, garch_result= garch_result, std_resid = std_resid, copula = Cop, model=model, threshold= 0.95)
-MC_var_gauss, MC_es_gauss = repeat_forecast(ticker = ticker, garch_result= garch_result, std_resid = std_resid, copula = Gauss_Cop, model=model, threshold= 0.95)
+
+MC_var_vine, MC_es_vine = repeat_forecast(
+    ticker=ticker,
+    garch_result=garch_result,
+    std_resid=std_resid,
+    copula=vine_cop,
+    model=model,
+    threshold=0.95,
+)
+MC_var_gauss, MC_es_gauss = repeat_forecast(
+    ticker=ticker,
+    garch_result=garch_result,
+    std_resid=std_resid,
+    copula=gauss_cop,
+    model=model,
+    threshold=0.95,
+)
 ```
 
 ### 10-day result - one path
@@ -647,9 +712,9 @@ sns.histplot(
     ax=ax,
 )
 ax.axvline(var_vine[-1], color="steelblue", lw=2, label=f"VaR Vine  {var_vine[-1]:.4f}")
-ax.axvline(var_gauss[-1], color="tomato", lw=2, label=f"VaR Gauss {var_gauß[-1]:.4f}")
+ax.axvline(var_gauss[-1], color="tomato", lw=2, label=f"VaR Gauss {var_gauss[-1]:.4f}")
 ax.axvline(es_vine[-1], color="navy", lw=2, label=f"ES Vine  {es_vine[-1]:.4f}")
-ax.axvline(es_gauss[-1], color="darkred", lw=2, label=f"ES Gauss  {es_gauß[-1]:.4f}")
+ax.axvline(es_gauss[-1], color="darkred", lw=2, label=f"ES Gauss  {es_gauss[-1]:.4f}")
 
 ax.axvline(
     var_cum_scaled_vine,
