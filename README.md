@@ -48,11 +48,11 @@ magnitude of joint exceedances — an effect ES captures but VaR does not.
 
 ```bash
 pip install -r requirements.txt
-quarto render Copula_Tail_Risk.qmd
+quarto render Copula_Analysis.qmd
 ```
 
 ## Requirements
 
 ```
-yfinance arch scipy numpy pandas matplotlib seaborn pyextremes pyvinecopulib joblib quarto
+yfinance arch scipy numpy pandas matplotlib seaborn pyextremes pyvinecopulib joblib 
 ```
