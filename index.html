@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.37">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>copula_analysis</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js" integrity="sha384-ZvpUoO/+PpLXR1lu4jmpXWu80pZlYUAfxl5NsBMWOEPSjUn/6Z/hRTt8+pR6L4N2" crossorigin="anonymous"></script><script src="Copula_Analysis_files/libs/clipboard/clipboard.min.js"></script>
+<script src="Copula_Analysis_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="Copula_Analysis_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="Copula_Analysis_files/libs/quarto-html/popper.min.js"></script>
+<script src="Copula_Analysis_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="Copula_Analysis_files/libs/quarto-html/anchor.min.js"></script>
+<link href="Copula_Analysis_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="Copula_Analysis_files/libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="Copula_Analysis_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="Copula_Analysis_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="Copula_Analysis_files/libs/bootstrap/bootstrap-138a6193a3bd40baf1e627da441a4734.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="https://cdn.jsdelivr.net/npm/requirejs@2.3.6/require.min.js" integrity="sha384-c9c+LnTbwQ3aujuU7ULEPVvgLs+Fn6fJUvIGTsuu1ZcCf11fiEubah0ttpca4ntM sha384-6V1/AdqZRWk1KAlWbKBlGhN7VG4iE/yAZcO6NZPMF8od0vukrvr0tg4qY6NSrItx" crossorigin="anonymous"></script>
+
+<script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Problem Statement</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div id="94a47bc7" class="cell" data-execution_count="1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pyvinecopulib <span class="im">import</span> Vinecop</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> scipy.stats <span class="im">import</span> rankdata, genpareto</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pyextremes <span class="im">import</span> EVA</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> seaborn <span class="im">as</span> sns</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pyvinecopulib <span class="im">as</span> pv</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pyextremes</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> yfinance <span class="im">as</span> yf</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> arch <span class="im">import</span> arch_model</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> joblib <span class="im">import</span> Parallel, delayed</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Rare and extreme losses are a fundamental challenge in risk analysis and portfolio management. This challenge is amplified in realistic multivariate settings: beyond the well-documented tendency of individual financial instruments to exhibit heavy tails and volatility clustering, the joint distribution of portfolio constituents introduces an additional layer of complexity. Understanding the dependence structure of the joint distribution — particularly in the tails — is crucial for accurately assessing portfolio tail risk.</p>
+<p>This project addresses that challenge using a two-stage semiparametric approach. At the marginal level, GJR-GARCH filtering is applied to each asset to remove conditional heteroskedasticity, followed by GPD modelling of the standardised residuals to capture heavy-tailed behaviour. At the joint level, two copula specifications are compared: a vine copula, estimated automatically from the data, and a Gaussian copula as a benchmark. The central claim is that the Gaussian copula — by construction exhibiting asymptotic independence in the tails — systematically underestimates extreme portfolio losses relative to the vine copula, even when both models share the same GPD marginal structure. This underestimation is purely a consequence of the dependence model, not the marginals.</p>
+<p>The analysis is conducted on a ten-dimensional portfolio of five US equities (NVDA, GOOGL, JPM, WMT, XOM) and five commodity futures (crude oil, silver, aluminium, gold, copper). Portfolio VaR and ES are estimated via Monte Carlo simulation for one- and ten-day horizons under both copula specifications.</p>
+<section id="choosing-instruments" class="level2">
+<h2 class="anchored" data-anchor-id="choosing-instruments">Choosing Instruments</h2>
+<p>The focus of this project lies on the methodological problem of tail risk modelling in multivariate portfolios; instrument selection is therefore kept deliberately simple. All assets are denominated in USD, avoiding the additional complexity of currency exchange risk that would arise with international investments — a natural extension for follow-up work, alongside more complex instruments such as options.</p>
+<p>The portfolio consists of five US equities (NVDA, GOOGL, JPM, WMT, XOM) and five commodity futures (crude oil, silver, aluminium, gold, copper). The selection is motivated by expected heterogeneity in tail dependence: equities are likely to exhibit strong co-movement in the tails due to shared market and sector-specific risks, whereas commodities — particularly gold — are expected to show weak or negative tail dependence with equities, reflecting their historical role as safe-haven assets during market stress.</p>
+<div id="2f36f84a" class="cell" data-execution_count="2">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>ticker <span class="op">=</span> [</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">'NVDA'</span>,</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">'GOOGL'</span>,</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">'JPM'</span>,</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">'WMT'</span>,</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">'XOM'</span>,</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">'CL=F'</span>,</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">'SI=F'</span>,</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">'ALI=F'</span>,</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">'GC=F'</span>,</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">'HG=F'</span>,</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="2c1e7073" class="cell" data-execution_count="3">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>prices <span class="op">=</span> yf.download(ticker, start<span class="op">=</span><span class="st">"2014-05-06"</span>)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>close <span class="op">=</span> prices[<span class="st">'Close'</span>]</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>log_returns <span class="op">=</span> np.log(close <span class="op">/</span> close.shift(<span class="dv">1</span>)).dropna()</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>n_years <span class="op">=</span> (log_returns.index[<span class="op">-</span><span class="dv">1</span>] <span class="op">-</span> log_returns.index[<span class="dv">0</span>]).days <span class="op">/</span> <span class="fl">365.25</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>n_obs <span class="op">=</span> <span class="bu">len</span>(log_returns)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+[                       0%                       ]
+[**********            20%                       ]  2 of 10 completed
+[**************        30%                       ]  3 of 10 completed
+[*******************   40%                       ]  4 of 10 completed
+[**********************50%                       ]  5 of 10 completed
+[**********************60%****                   ]  6 of 10 completed
+[**********************70%*********              ]  7 of 10 completed
+[**********************80%*************          ]  8 of 10 completed
+[**********************90%******************     ]  9 of 10 completed
+[*********************100%***********************]  10 of 10 completed
+/Users/moritz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/pandas/core/internals/blocks.py:395: RuntimeWarning: invalid value encountered in log
+  result = func(self.values, **kwargs)</code></pre>
+</div>
+</div>
+<p>Log-returns, defined as <span class="math inline">\(r_t = \log(P_t / P_{t-1})\)</span>, are used throughout in preference to simple returns for their additivity over time. Data is downloaded from Yahoo Finance via <code>yfinance</code>. The sample start was initially set to 2010-01-01 to maximise the available window; however, aluminium futures (ALI=F) are only available from 2014-05-06, so the start date was adjusted accordingly to ensure a balanced panel. This yields approximately 12 years of daily data with 2,990 observations per asset.</p>
+</section>
+<section id="gjr-garch" class="level2">
+<h2 class="anchored" data-anchor-id="gjr-garch">GJR-GARCH</h2>
+<p>To address the problem of volatility clustering in financial time series — and to meet the i.i.d. requirements of the subsequent POT analysis — a GJR-GARCH(1,1,1) model is applied to each asset. GJR-GARCH extends the standard GARCH model by allowing negative shocks to increase future volatility by more than positive shocks of equal magnitude. This asymmetry is known as the leverage effect: when asset prices fall, the debt-to-equity ratio of firms increases, raising financial risk and hence volatility. In addition, investors may react more strongly to losses than to gains of the same size.</p>
+<p>The GJR-GARCH (<span class="math inline">\(p=1\)</span>, <span class="math inline">\(o=1\)</span>, <span class="math inline">\(q=1\)</span>) model is specified as <span class="math display">\[
+X_t = \sigma_t \epsilon_t,
+\]</span></p>
+<p>where the conditional variance evolves according to <span class="math display">\[
+\sigma^2_t = \alpha_0 + \alpha_1 \epsilon^2_{t-1}
++ \gamma_1 \epsilon^2_{t-1} \mathbf{1}[\epsilon_{t-1} &lt; 0]
++ \beta_1 \sigma^2_{t-1}.
+\]</span></p>
+<p>When the shock at <span class="math inline">\(t-1\)</span> is negative, the indicator <span class="math inline">\(\mathbf{1}[\epsilon_{t-1} &lt; 0]\)</span> equals one and the effective ARCH coefficient becomes <span class="math inline">\(\alpha_1 + \gamma_1 &gt; \alpha_1\)</span>, producing a larger increase in conditional variance than a positive shock of the same size.</p>
+<div id="49ea1e55" class="cell" data-execution_count="4">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> garch(ticker, log_returns, p, q, o):</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    mu <span class="op">=</span> {}</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    std_resid <span class="op">=</span> {}</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    conditional_volatility <span class="op">=</span> {}</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    garch_result <span class="op">=</span> {}</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> t <span class="kw">in</span> ticker:</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>        gam <span class="op">=</span> arch_model(log_returns[t]<span class="op">*</span><span class="dv">100</span>, vol<span class="op">=</span><span class="st">'GARCH'</span>, p<span class="op">=</span>p, q<span class="op">=</span>q, o<span class="op">=</span>o)</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>        garch_result[t]<span class="op">=</span> gam.fit(disp<span class="op">=</span><span class="st">'off'</span>)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>        mu[t] <span class="op">=</span> <span class="op">-</span>((garch_result[t].params[<span class="st">'mu'</span>])<span class="op">/</span><span class="dv">100</span>)</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>        std_resid[t] <span class="op">=</span> <span class="op">-</span>(garch_result[t].resid <span class="op">/</span> garch_result[t].conditional_volatility)</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>        conditional_volatility[t] <span class="op">=</span> garch_result[t].conditional_volatility <span class="op">/</span> <span class="dv">100</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> garch_result, std_resid, conditional_volatility, mu</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>garch_result, std_resid, conditional_volatility, mu_ts <span class="op">=</span> garch(ticker , log_returns, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(pd.DataFrame(std_resid).std())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>NVDA     0.999995
+GOOGL    0.999964
+JPM      1.000047
+WMT      1.000031
+XOM      0.999893
+CL=F     0.999969
+SI=F     1.000027
+ALI=F    1.000184
+GC=F     1.000358
+HG=F     0.999499
+dtype: float64</code></pre>
+</div>
+</div>
+<p>The model is fitted to each of the ten assets separately. For numerical stability, log-returns are multiplied by 100 prior to estimation; the conditional volatility is rescaled back afterwards. The full fit object, the conditional volatility, and the standardised residuals are retained for subsequent analysis.</p>
+<p>An important sign convention applies. The GJR-GARCH leverage term is triggered by <span class="math inline">\(\mathbf{1}[\epsilon_{t-1} &lt; 0]\)</span>, i.e.&nbsp;by <em>negative</em> residuals. If the model were fitted directly on log-losses (positive = loss), negative residuals would correspond to gains, so the leverage effect would incorrectly amplify volatility after gains rather than losses. For this reason, the model is fitted on log-returns, where negative residuals correctly identify losses. After fitting, the standardised residuals are negated to convert to the loss scale required for POT analysis — so that large positive values correspond to large losses. A short sanity check confirms that the standard deviation of the negated residuals is close to 1 for all assets, as expected under correct standardisation.</p>
+</section>
+<section id="pot-analysis" class="level2">
+<h2 class="anchored" data-anchor-id="pot-analysis">POT Analysis</h2>
+<p>A GPD model is fitted separately to the standardised residuals of each asset via the Peaks-over-Threshold method. The central modelling choice is the threshold <span class="math inline">\(u\)</span>: exceedances above <span class="math inline">\(u\)</span> are theoretically justified to follow a GPD distribution by the Pickands–Balkema–de Haan theorem, but <span class="math inline">\(u\)</span> must balance two competing demands. A high threshold reduces the bias of the GPD approximation but leaves few exceedances for estimation; a low threshold yields more data but risks fitting the GPD to observations where the approximation does not yet hold — the familiar bias–variance trade-off in extreme value analysis.</p>
+<p>As a pragmatic solution, the 95th percentile of each asset’s residual distribution is used as a common threshold. This ensures a sufficient number of exceedances for stable MLE estimation while sitting far enough into the tail for the GPD approximation to plausibly hold. A limitation of this uniform choice is that the threshold may be too conservative for some assets — yielding fewer exceedances than necessary — or not conservative enough for others, in which case the GPD approximation may not yet be valid and parameter estimates may be biased. Parameter estimation is carried out via MLE using the <code>pyextremes</code> package.</p>
+<div id="70dbfe23" class="cell" data-execution_count="5">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>alpha <span class="op">=</span> <span class="fl">0.95</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> GPD_fit(ticker, std_resid, alpha):</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    u <span class="op">=</span> {}</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    model <span class="op">=</span> {}</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> t <span class="kw">in</span> ticker:</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>        u[t] <span class="op">=</span> np.quantile(std_resid[t], alpha)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>        model[t] <span class="op">=</span> EVA(data<span class="op">=</span>std_resid[t])</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>        model[t].get_extremes(method<span class="op">=</span><span class="st">"POT"</span>, threshold<span class="op">=</span>u[t])</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>        model[t].fit_model(distribution<span class="op">=</span><span class="st">"genpareto"</span>, model<span class="op">=</span><span class="st">"MLE"</span>)</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> u, model</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>u, model <span class="op">=</span> GPD_fit(ticker, std_resid, alpha)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="b7ad5591" class="cell" data-execution_count="6">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>assets <span class="op">=</span> [</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">"NVDA"</span>,</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"GOOGL"</span>,</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">"JPM"</span>,</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">"WMT"</span>,</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">"XOM"</span>,</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>commodities <span class="op">=</span> [</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">"CL=F"</span>,</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">"SI=F"</span>,</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">"ALI=F"</span>,</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>    <span class="st">"GC=F"</span>,</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>    <span class="st">"HG=F"</span>,</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">2</span>, <span class="dv">3</span>, figsize<span class="op">=</span>(<span class="dv">15</span>, <span class="dv">10</span>))</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> ax, t <span class="kw">in</span> <span class="bu">zip</span>(axes.flatten(), assets):</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>    model[t].plot_probability(<span class="st">"QQ"</span>, ax<span class="op">=</span>ax)</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>    axes.flatten()[<span class="op">-</span><span class="dv">1</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>    ax.set_title(t)</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">2</span>, <span class="dv">3</span>, figsize<span class="op">=</span>(<span class="dv">15</span>, <span class="dv">10</span>))</span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> ax, c <span class="kw">in</span> <span class="bu">zip</span>(axes.flatten(), commodities):</span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>    model[c].plot_probability(<span class="st">"QQ"</span>, ax<span class="op">=</span>ax)</span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>    axes.flatten()[<span class="op">-</span><span class="dv">1</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>    ax.set_title(c)</span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Copula_Analysis_files/figure-html/cell-7-output-1.png" width="1180" height="819" class="figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Copula_Analysis_files/figure-html/cell-7-output-2.png" width="1171" height="819" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The QQ-plots indicate a reasonable overall fit across most assets, with minor upper-tail deviations that are typical for GPD models: the most extreme observations tend to exceed the fitted distribution, as the GPD is anchored to the bulk of exceedances rather than the very deepest tail.</p>
+<p>A notable exception is aluminium (ALI=F), where the fit is markedly poor (<span class="math inline">\(R^2 = 0.763\)</span>). A single observation with a standardised residual of approximately 21 lies far above its theoretical GPD quantile of around 5. This is likely attributable to the extreme price spike in aluminium futures following the Russian invasion of Ukraine in February 2022 and the subsequent sanctions against Russian aluminium producers — a singular, politically driven event that falls outside the scope of any stationary tail model. As a consequence, tail risk for aluminium will be systematically underestimated for events of that severity, which constitutes a meaningful limitation of the downstream VaR and ES estimates.</p>
+</section>
+<section id="creating-pseudo-observations" class="level2">
+<h2 class="anchored" data-anchor-id="creating-pseudo-observations">Creating Pseudo Observations</h2>
+<p>Before fitting copula models, the standardised residuals of each asset must be transformed to uniform margins on <span class="math inline">\((0, 1)\)</span> — a requirement for Sklar’s theorem to hold. This is achieved via the probability integral transform (PIT): if <span class="math inline">\(X\)</span> has a continuous distribution function <span class="math inline">\(F\)</span>, then <span class="math inline">\(F(X) \sim U(0,1)\)</span>, since <span class="math inline">\(P(F^{\leftarrow}(U) \leq x) = P(U \leq F(x)) = F(x)\)</span>.</p>
+<p>A semiparametric PIT is used rather than a purely empirical one. The empirical CDF is bounded above by <span class="math inline">\(n/(n+1)\)</span>, making it unable to assign probabilities to observations beyond the largest observed value. The GPD-based tail removes this limitation by extrapolating smoothly towards 1 for extreme observations.</p>
+<p>Concretely, a distinction is made between the body and the tail of each marginal distribution. For observations below the threshold <span class="math inline">\(u_t\)</span>, the empirical CDF is used: ranks are computed and divided by <span class="math inline">\(n+1\)</span>, so that body values lie in <span class="math inline">\((0, (n - n_u)/(n+1)]\)</span>. For tail observations (<span class="math inline">\(z &gt; u_t\)</span>), the semiparametric CDF is given by <span class="math display">\[
+\hat{F}(z) = 1 - \frac{n_u}{n}
+\left(1 + \hat{\xi}\,\frac{z - u_t}{\hat{\sigma}}\right)^{-1/\hat{\xi}},
+\]</span></p>
+<p>where <span class="math inline">\(n_u/n\)</span> is the empirical probability of exceeding <span class="math inline">\(u_t\)</span>. At the threshold, the tail starts at <span class="math inline">\(1 - n_u/n = (n-n_u)/n\)</span>, which is approximately continuous with the body endpoint <span class="math inline">\((n-n_u)/(n+1)\)</span> for large <span class="math inline">\(n\)</span>.</p>
+<div id="23f029cd" class="cell" data-execution_count="7">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> pit(ticker, model, std_resid, u):</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    F <span class="op">=</span> {}</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> t <span class="kw">in</span> ticker:</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>        u_t <span class="op">=</span> u[t]</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>        n_u <span class="op">=</span> <span class="bu">len</span>(model[t].extremes)</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>        n <span class="op">=</span> <span class="bu">len</span>(std_resid[t])</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>        f_bar_u <span class="op">=</span> n_u <span class="op">/</span> n</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>        z_full <span class="op">=</span> std_resid[t].dropna().to_numpy()</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>        z_tail <span class="op">=</span> z_full[z_full <span class="op">&gt;</span> u_t]</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>        F_body <span class="op">=</span> rankdata(z_full)[z_full <span class="op">&lt;=</span> u_t] <span class="op">/</span> (n <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>        xi <span class="op">=</span> model[t].distribution.mle_parameters[<span class="st">"c"</span>]</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>        sigma <span class="op">=</span> model[t].distribution.mle_parameters[<span class="st">"scale"</span>]</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>        F_tail <span class="op">=</span> <span class="dv">1</span> <span class="op">-</span> f_bar_u <span class="op">*</span> (<span class="dv">1</span> <span class="op">+</span> xi <span class="op">*</span> ((z_tail <span class="op">-</span> u_t) <span class="op">/</span> sigma)) <span class="op">**</span> (<span class="op">-</span><span class="dv">1</span> <span class="op">/</span> xi)</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>        F_full <span class="op">=</span> np.zeros(n)</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>        F_full[z_full <span class="op">&lt;=</span> u_t] <span class="op">=</span> F_body</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>        F_full[z_full <span class="op">&gt;</span> u_t] <span class="op">=</span> F_tail</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>        F[t] <span class="op">=</span> F_full</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> F</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>F_ticker <span class="op">=</span> pit(ticker, model, std_resid, u)</span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>pd.DataFrame(F_ticker).describe()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display" data-execution_count="7">
+<div>
+
+
+<table class="dataframe caption-top table table-sm table-striped small" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">NVDA</th>
+<th data-quarto-table-cell-role="th">GOOGL</th>
+<th data-quarto-table-cell-role="th">JPM</th>
+<th data-quarto-table-cell-role="th">WMT</th>
+<th data-quarto-table-cell-role="th">XOM</th>
+<th data-quarto-table-cell-role="th">CL=F</th>
+<th data-quarto-table-cell-role="th">SI=F</th>
+<th data-quarto-table-cell-role="th">ALI=F</th>
+<th data-quarto-table-cell-role="th">GC=F</th>
+<th data-quarto-table-cell-role="th">HG=F</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">count</th>
+<td>2990.000000</td>
+<td>2990.000000</td>
+<td>2990.000000</td>
+<td>2990.000000</td>
+<td>2990.000000</td>
+<td>2990.000000</td>
+<td>2990.000000</td>
+<td>2990.000000</td>
+<td>2990.000000</td>
+<td>2990.000000</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">mean</th>
+<td>0.500037</td>
+<td>0.500015</td>
+<td>0.500064</td>
+<td>0.500051</td>
+<td>0.500058</td>
+<td>0.500030</td>
+<td>0.500036</td>
+<td>0.500100</td>
+<td>0.500045</td>
+<td>0.500100</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">std</th>
+<td>0.288686</td>
+<td>0.288651</td>
+<td>0.288730</td>
+<td>0.288709</td>
+<td>0.288720</td>
+<td>0.288677</td>
+<td>0.288685</td>
+<td>0.288788</td>
+<td>0.288699</td>
+<td>0.288790</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">min</th>
+<td>0.000334</td>
+<td>0.000334</td>
+<td>0.000334</td>
+<td>0.000334</td>
+<td>0.000334</td>
+<td>0.000334</td>
+<td>0.000334</td>
+<td>0.000334</td>
+<td>0.000334</td>
+<td>0.000334</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">25%</th>
+<td>0.250167</td>
+<td>0.250167</td>
+<td>0.250167</td>
+<td>0.250167</td>
+<td>0.250167</td>
+<td>0.250167</td>
+<td>0.250167</td>
+<td>0.250167</td>
+<td>0.250167</td>
+<td>0.250167</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">50%</th>
+<td>0.500000</td>
+<td>0.500000</td>
+<td>0.500000</td>
+<td>0.500000</td>
+<td>0.500000</td>
+<td>0.500000</td>
+<td>0.500000</td>
+<td>0.500000</td>
+<td>0.500000</td>
+<td>0.500000</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">75%</th>
+<td>0.749833</td>
+<td>0.749833</td>
+<td>0.749833</td>
+<td>0.749833</td>
+<td>0.749833</td>
+<td>0.749833</td>
+<td>0.749833</td>
+<td>0.749833</td>
+<td>0.749833</td>
+<td>0.749833</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">max</th>
+<td>0.999913</td>
+<td>0.999766</td>
+<td>0.999757</td>
+<td>0.999645</td>
+<td>0.999742</td>
+<td>0.999628</td>
+<td>0.999731</td>
+<td>0.999993</td>
+<td>0.999827</td>
+<td>0.999962</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+</section>
+<section id="fitting-copulas-models" class="level2">
+<h2 class="anchored" data-anchor-id="fitting-copulas-models">Fitting Copulas Models</h2>
+<p>Two copula specifications are fitted to the pseudo-observations. The first is an automatically selected vine copula; the second is a Gaussian copula serving as benchmark. Both are estimated using <code>pyvinecopulib</code>.</p>
+<p>The vine copula is constructed via the algorithm of Dissmann et al.&nbsp;(2013), which sequentially selects pair-copulas in a tree structure, conditioning each pair on the variables already accounted for by higher-level trees. Crucially, each pair can be assigned a different copula family — for instance a Student-<span class="math inline">\(t\)</span> copula for two equity indices with strong joint tail behaviour, and an independence copula for an equity-gold pair. This flexibility is the key advantage over the Gaussian copula, which imposes the same dependence structure on all pairs and, by construction of the Gaussian copula density, exhibits asymptotic independence: <span class="math inline">\(\lambda_U = 0\)</span> for every pair regardless of the correlation parameter. This property holds even when non-Gaussian marginals such as GPD are used, since asymptotic independence is a feature of the copula itself, not the marginals.</p>
+<p>The Gaussian copula is parametrised solely by the correlation matrix <span class="math inline">\(P\)</span>. It is estimated via Kendall’s <span class="math inline">\(\tau\)</span>, exploiting the analytical relationship <span class="math display">\[
+\rho = \sin\!\left(\frac{\pi}{2}\,\tau\right),
+\]</span></p>
+<p>which allows a rank-based, robust estimate of <span class="math inline">\(P\)</span> without requiring full MLE.</p>
+<div id="0865272d" class="cell" data-execution_count="8">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Automated selection</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>mat <span class="op">=</span> np.array(<span class="bu">list</span>(F_ticker.values())).T</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>vine_cop <span class="op">=</span> pv.Vinecop(d<span class="op">=</span><span class="dv">10</span>)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>vine_cop.select(data<span class="op">=</span>mat)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>controls <span class="op">=</span> pv.FitControlsVinecop(family_set<span class="op">=</span>[pv.BicopFamily.gaussian])</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>gauss_cop <span class="op">=</span> pv.Vinecop.from_data(mat, controls<span class="op">=</span>controls)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>To illustrate the difference between the two specifications, the fitted pair-copula for NVDA and GOOGL is shown for both models. The upper-right panel displays simulated pseudo-observations on the uniform scale; the lower-left panel shows copula density contours in normal scores.</p>
+<p>For the vine copula, the pseudo-observation scatter shows clear clustering in the upper right corner — both assets experiencing large losses simultaneously — and the density contours are visibly elongated toward that corner. This indicates positive upper tail dependence (<span class="math inline">\(\lambda_U &gt; 0\)</span>): extreme losses in NVDA and GOOGL tend to co-occur more often than independence would predict.</p>
+<p>The Gaussian copula, fitted with the same Kendall’s <span class="math inline">\(\tau = 0.34\)</span>, produces symmetric elliptical contours with no concentration in the corners. This reflects its structural property of asymptotic independence (<span class="math inline">\(\lambda_U = 0\)</span>): conditional on one asset experiencing an extreme loss, the probability that the other does too converges to zero as the threshold increases. The two models capture the same average dependence but disagree fundamentally about joint tail behaviour — which is precisely what matters for portfolio tail risk.</p>
+<div id="c0cd675f" class="cell" data-execution_count="9">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>pair_cop <span class="op">=</span> vine_cop.get_pair_copula(tree<span class="op">=</span><span class="dv">0</span>, edge<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>sim <span class="op">=</span> pv.Bicop.simulate(pair_cop, n <span class="op">=</span> <span class="dv">100000</span>)</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>pv.pairs_copula_data(sim)</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>pair_cop <span class="op">=</span> gauss_cop.get_pair_copula(tree<span class="op">=</span><span class="dv">0</span>, edge <span class="op">=</span> <span class="dv">0</span>)</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>sim <span class="op">=</span> pv.Bicop.simulate(pair_cop, n <span class="op">=</span> <span class="dv">100000</span>)</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>pv.pairs_copula_data(sim)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display" data-execution_count="9">
+<pre><code>(&lt;Figure size 537.6x537.6 with 4 Axes&gt;,
+ array([[&lt;Axes: ylabel='var1'&gt;, &lt;Axes: &gt;],
+        [&lt;Axes: xlabel='var1', ylabel='var2'&gt;, &lt;Axes: xlabel='var2'&gt;]],
+       dtype=object))</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Copula_Analysis_files/figure-html/cell-10-output-2.png" width="528" height="512" class="figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Copula_Analysis_files/figure-html/cell-10-output-3.png" width="528" height="512" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="simulate-from-copulas" class="level2">
+<h2 class="anchored" data-anchor-id="simulate-from-copulas">Simulate from Copulas</h2>
+<p>Having fitted both copula models, samples of pseudo-observations on <span class="math inline">\((0,1)^{10}\)</span> are drawn from each. These are then converted back to the original residual scale via the inverse semiparametric PIT, recovering simulated standardised residuals with the joint dependence structure implied by the respective copula.</p>
+<p>The inversion requires care in the tail. For a simulated value <span class="math inline">\(U \leq \hat{F}(u)\)</span>, the empirical quantile function is applied directly. For <span class="math inline">\(U &gt; \hat{F}(u)\)</span>, one cannot simply call <code>genpareto.ppf(U)</code>: since <span class="math inline">\(U \in (\hat{F}(u), 1) \approx (0.95, 1)\)</span>, the GPD quantile function would only return large excesses, never producing values close to the threshold — small tail exceedances would be impossible. Instead, <span class="math inline">\(U\)</span> is rescaled to a conditional uniform on <span class="math inline">\((0,1)\)</span>: <span class="math display">\[
+v = \frac{U - \hat{F}(u)}{1 - \hat{F}(u)},
+\]</span></p>
+<p>which is the conditional probability of being at most as extreme as <span class="math inline">\(U\)</span>, given that the threshold has already been exceeded. The inverse then follows as <span class="math display">\[
+z = u + \frac{\hat{\sigma}}{\hat{\xi}}\left[(1-v)^{-\hat{\xi}} - 1\right]
+= u + \texttt{genpareto.ppf}(v,\, \hat{\xi},\, \hat{\sigma}).
+\]</span></p>
+<p>At <span class="math inline">\(U = \hat{F}(u)\)</span> exactly, <span class="math inline">\(v = 0\)</span> and <span class="math inline">\(\texttt{genpareto.ppf}(0) = 0\)</span>, so <span class="math inline">\(z = u\)</span> — the inverse PIT is continuous at the threshold.</p>
+<div id="47c68c7c" class="cell" data-execution_count="10">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>sim <span class="op">=</span> pv.Vinecop.simulate(vine_cop, n<span class="op">=</span><span class="dv">10000</span>)</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>sim.shape</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>sim_gauss <span class="op">=</span> pv.Vinecop.simulate(gauss_cop, n<span class="op">=</span><span class="dv">10000</span>)</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> inv_pit(ticker, std_resid, model, sim, alpha):</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    F_inv <span class="op">=</span> {}</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i, t <span class="kw">in</span> <span class="bu">enumerate</span>(ticker):</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>        u_full <span class="op">=</span> sim[:, i]</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>        n_sim <span class="op">=</span> <span class="bu">len</span>(u_full)</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>        u_t <span class="op">=</span> np.quantile(std_resid[t], alpha)</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>        n_u <span class="op">=</span> <span class="bu">len</span>(model[t].extremes)</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>        n_obs <span class="op">=</span> <span class="bu">len</span>(std_resid[t])</span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>        F_hat_u <span class="op">=</span> <span class="dv">1</span> <span class="op">-</span> n_u <span class="op">/</span> n_obs</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>        xi <span class="op">=</span> model[t].distribution.mle_parameters[<span class="st">"c"</span>]</span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>        sigma <span class="op">=</span> model[t].distribution.mle_parameters[<span class="st">"scale"</span>]</span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>        body_mask <span class="op">=</span> u_full <span class="op">&lt;=</span> F_hat_u</span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>        tail_mask <span class="op">=</span> <span class="op">~</span>body_mask</span>
+<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a>        F_inv_full <span class="op">=</span> np.empty(n_sim)</span>
+<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a>        <span class="co"># body: empirical quantile function</span></span>
+<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a>        F_inv_full[body_mask] <span class="op">=</span> np.quantile(std_resid[t], u_full[body_mask])</span>
+<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a>        <span class="co"># tail: rescale U to conditional uniform, GPD ppf, then shift by threshold</span></span>
+<span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a>        v_tail <span class="op">=</span> (u_full[tail_mask] <span class="op">-</span> F_hat_u) <span class="op">/</span> (<span class="dv">1</span> <span class="op">-</span> F_hat_u)</span>
+<span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a>        F_inv_full[tail_mask] <span class="op">=</span> u_t <span class="op">+</span> genpareto.ppf(v_tail, c<span class="op">=</span>xi, scale<span class="op">=</span>sigma)</span>
+<span id="cb13-32"><a href="#cb13-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-33"><a href="#cb13-33" aria-hidden="true" tabindex="-1"></a>        F_inv[t] <span class="op">=</span> F_inv_full</span>
+<span id="cb13-34"><a href="#cb13-34" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> F_inv</span>
+<span id="cb13-35"><a href="#cb13-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-36"><a href="#cb13-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-37"><a href="#cb13-37" aria-hidden="true" tabindex="-1"></a>F_inv <span class="op">=</span> inv_pit(ticker, std_resid, model, sim, alpha)</span>
+<span id="cb13-38"><a href="#cb13-38" aria-hidden="true" tabindex="-1"></a>sim_resid <span class="op">=</span> pd.DataFrame(F_inv)</span>
+<span id="cb13-39"><a href="#cb13-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-40"><a href="#cb13-40" aria-hidden="true" tabindex="-1"></a>F_inv_gauss <span class="op">=</span> inv_pit(ticker, std_resid, model, sim_gauss, alpha)</span>
+<span id="cb13-41"><a href="#cb13-41" aria-hidden="true" tabindex="-1"></a>sim_resid_gauss <span class="op">=</span> pd.DataFrame(F_inv_gauss)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The simulated standardised residuals are converted back to the log-loss scale by applying the GARCH location-scale relationship: <span class="math display">\[
+\tilde{L}_{T+1} = \hat{\mu} + \hat{\sigma}_T \cdot Z,
+\]</span> where <span class="math inline">\(\hat{\sigma}_T\)</span> is the last observed conditional volatility — the natural one-step-ahead forecast under GARCH — and <span class="math inline">\(Z\)</span> is the simulated standardised residual from the inverse PIT. The mean term <span class="math inline">\(\hat{\mu}\)</span> is included for completeness; in practice it is negligible relative to <span class="math inline">\(\hat{\sigma}_T\)</span> at the tail quantiles of interest, but omitting it entirely would be incorrect.</p>
+<div id="7d7c9db7" class="cell" data-execution_count="11">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> rescale(ticker, sim_resid, conditional_volatility, mu):</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>    sim_losses <span class="op">=</span> pd.DataFrame(index<span class="op">=</span><span class="bu">range</span>(<span class="bu">len</span>(sim_resid)), columns<span class="op">=</span>ticker)</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> t <span class="kw">in</span> sim_resid:</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>        sim_losses[t] <span class="op">=</span> mu[t] <span class="op">+</span> sim_resid[t] <span class="op">*</span> conditional_volatility[t].iloc[<span class="op">-</span><span class="dv">1</span>]</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> sim_losses</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>sim_log_losses <span class="op">=</span> rescale(ticker, sim_resid, conditional_volatility, mu_ts)</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>sim_log_losses_gauss <span class="op">=</span> rescale(ticker, sim_resid_gauss, conditional_volatility, mu_ts)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="loss-aggregation-and-risk-measures" class="level2">
+<h2 class="anchored" data-anchor-id="loss-aggregation-and-risk-measures">Loss Aggregation and Risk Measures</h2>
+<p>Individual asset losses are aggregated into a single portfolio loss by taking an equally weighted average across all ten assets, <span class="math display">\[
+L_P = \frac{1}{n}\sum_{i=1}^{n} L_i.
+\]</span> Equal weighting is a deliberate simplification: the focus of this project is the effect of the dependence model on portfolio tail risk, not portfolio optimisation. With alternative weights, the quantitative results would shift, but the qualitative finding — that the vine copula produces larger tail risk estimates than the Gaussian copula — is expected to be robust. The simulated loss distributions and corresponding risk measures for both copula specifications are shown below.</p>
+<section id="day-risk-measures" class="level3">
+<h3 class="anchored" data-anchor-id="day-risk-measures">1-day Risk Measures</h3>
+<div id="15f0b9aa" class="cell" data-execution_count="12">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>Loss_Portfolio <span class="op">=</span> pd.DataFrame.<span class="bu">sum</span>(sim_log_losses, axis<span class="op">=</span><span class="dv">1</span>) <span class="op">/</span> sim_log_losses.shape[<span class="dv">1</span>]</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>Loss_Portfolio_gauss <span class="op">=</span> (</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    pd.DataFrame.<span class="bu">sum</span>(sim_log_losses_gauss, axis<span class="op">=</span><span class="dv">1</span>) <span class="op">/</span> sim_log_losses_gauss.shape[<span class="dv">1</span>]</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>VaR_vine_1d <span class="op">=</span> np.quantile(Loss_Portfolio, <span class="fl">0.99</span>)</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>ES_vine_1d <span class="op">=</span> Loss_Portfolio[Loss_Portfolio <span class="op">&gt;</span> VaR_vine_1d].mean()</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Next-day Vine VaR_</span><span class="sc">{</span><span class="fl">0.99</span><span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>VaR_vine_1d<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Next-day Vine ES_</span><span class="sc">{</span><span class="fl">0.99</span><span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>ES_vine_1d<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>VaR_gauss_1d <span class="op">=</span> np.quantile(Loss_Portfolio_gauss, <span class="fl">0.99</span>)</span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>ES_gauss_1d <span class="op">=</span> Loss_Portfolio_gauss[Loss_Portfolio_gauss <span class="op">&gt;</span> VaR_gauss_1d].mean()</span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Next-day Gauss VaR_</span><span class="sc">{</span><span class="fl">0.99</span><span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>VaR_gauss_1d<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Next-day Gauss ES_</span><span class="sc">{</span><span class="fl">0.99</span><span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>ES_gauss_1d<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>sns.histplot(</span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>    Loss_Portfolio, label<span class="op">=</span><span class="st">"Loss-Distribution Vine"</span>, alpha<span class="op">=</span><span class="fl">0.5</span>, stat<span class="op">=</span><span class="st">"probability"</span></span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a>sns.histplot(</span>
+<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a>    Loss_Portfolio_gauss, label<span class="op">=</span><span class="st">"Loss-Distribution Gauss"</span>, alpha<span class="op">=</span><span class="fl">0.4</span>, stat<span class="op">=</span><span class="st">"probability"</span></span>
+<span id="cb15-23"><a href="#cb15-23" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb15-24"><a href="#cb15-24" aria-hidden="true" tabindex="-1"></a>plt.xlim(<span class="fl">0.00</span>, <span class="fl">0.20</span>)</span>
+<span id="cb15-25"><a href="#cb15-25" aria-hidden="true" tabindex="-1"></a>plt.axvline(VaR_vine_1d, color<span class="op">=</span><span class="st">"steelblue"</span>, lw<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="ss">f"VaR Vine  </span><span class="sc">{</span>VaR_vine_1d<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb15-26"><a href="#cb15-26" aria-hidden="true" tabindex="-1"></a>plt.axvline(VaR_gauss_1d, color<span class="op">=</span><span class="st">"tomato"</span>, lw<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="ss">f"VaR Gauss </span><span class="sc">{</span>VaR_gauss_1d<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb15-27"><a href="#cb15-27" aria-hidden="true" tabindex="-1"></a>plt.axvline(ES_vine_1d, color<span class="op">=</span><span class="st">"navy"</span>, lw<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="ss">f"ES Vine  </span><span class="sc">{</span>ES_vine_1d<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb15-28"><a href="#cb15-28" aria-hidden="true" tabindex="-1"></a>plt.axvline(ES_gauss_1d, color<span class="op">=</span><span class="st">"darkred"</span>, lw<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="ss">f"ES Gauss  </span><span class="sc">{</span>ES_gauss_1d<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb15-29"><a href="#cb15-29" aria-hidden="true" tabindex="-1"></a>plt.legend()</span>
+<span id="cb15-30"><a href="#cb15-30" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Next-day Vine VaR_0.99: 0.030
+Next-day Vine ES_0.99: 0.038
+Next-day Gauss VaR_0.99: 0.028
+Next-day Gauss ES_0.99: 0.035</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Copula_Analysis_files/figure-html/cell-13-output-2.png" width="616" height="411" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="day-risk-measures-1" class="level3">
+<h3 class="anchored" data-anchor-id="day-risk-measures-1">10-day Risk measures</h3>
+<p>To produce 10-day VaR and ES estimates for both copula specifications, a two-stage Monte Carlo procedure is applied. In the first stage, portfolio losses are simulated via GARCH forward recursion: for each horizon step <span class="math inline">\(h = 1,\ldots,10\)</span>, the conditional variance is updated using the GJR-GARCH equation and new standardised residuals are drawn from the fitted copula via inverse PIT. This is repeated <span class="math inline">\(R = 100\)</span> times per copula model.</p>
+<p>To isolate model differences from Monte Carlo noise, Common Random Numbers (CRN) are used: in each replication round <span class="math inline">\(r\)</span>, both the vine and the Gaussian copula are seeded with the same value <span class="math inline">\(\texttt{base\_seed} + r\)</span>. As a result, any difference in risk measure estimates between the two models reflects the copula structure alone, not sampling variability.</p>
+<p>An important subtlety arises in the ES calculation. ES is not additive over time: summing daily ES estimates across ten horizons implicitly assumes that the worst days always coincide across periods, which overstates the true risk. The correct approach is to first cumulate losses along each simulated path and then compute VaR and ES over the resulting 10-day loss distribution.</p>
+<div id="07414aea" class="cell" data-execution_count="13">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> forecast(</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>    ticker,</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>    garch_result,</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    std_resid,</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    copula,</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>    model,</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>    threshold,</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>    horizon<span class="op">=</span><span class="dv">10</span>,</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>    n_sims<span class="op">=</span><span class="dv">100000</span>,</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>    seed<span class="op">=</span><span class="dv">42</span>,</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>):</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>    portfolio_forecast <span class="op">=</span> pd.DataFrame()</span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>    sigma2_t <span class="op">=</span> {}</span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>    e <span class="op">=</span> {}</span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> t <span class="kw">in</span> ticker:</span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>        sigma2_t[t] <span class="op">=</span> (garch_result[t].conditional_volatility.iloc[<span class="op">-</span><span class="dv">1</span>] <span class="op">/</span> <span class="dv">100</span>) <span class="op">**</span> <span class="dv">2</span></span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>        e[t] <span class="op">=</span> <span class="op">-</span>(<span class="bu">float</span>(garch_result[t].resid.iloc[<span class="op">-</span><span class="dv">1</span>]) <span class="op">/</span> <span class="dv">100</span>)</span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> h <span class="kw">in</span> <span class="bu">range</span>(horizon):</span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a>        u_sim <span class="op">=</span> pv.Vinecop.simulate(copula, n<span class="op">=</span>n_sims, seeds<span class="op">=</span>[seed, h])</span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a>        F_inv <span class="op">=</span> pd.DataFrame(inv_pit(ticker, std_resid, model, u_sim, threshold))</span>
+<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a>        sim_log_losses <span class="op">=</span> pd.DataFrame()</span>
+<span id="cb17-24"><a href="#cb17-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-25"><a href="#cb17-25" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> t <span class="kw">in</span> ticker:</span>
+<span id="cb17-26"><a href="#cb17-26" aria-hidden="true" tabindex="-1"></a>            p <span class="op">=</span> garch_result[t].params</span>
+<span id="cb17-27"><a href="#cb17-27" aria-hidden="true" tabindex="-1"></a>            mu, omega <span class="op">=</span> <span class="op">-</span>p[<span class="st">"mu"</span>] <span class="op">/</span> <span class="dv">100</span>, p[<span class="st">"omega"</span>] <span class="op">/</span> <span class="dv">100</span><span class="op">**</span><span class="dv">2</span></span>
+<span id="cb17-28"><a href="#cb17-28" aria-hidden="true" tabindex="-1"></a>            a1, b1, g1 <span class="op">=</span> p[<span class="st">"alpha[1]"</span>], p[<span class="st">"beta[1]"</span>], p[<span class="st">"gamma[1]"</span>]</span>
+<span id="cb17-29"><a href="#cb17-29" aria-hidden="true" tabindex="-1"></a>            gamma_eff <span class="op">=</span> np.where(e[t] <span class="op">&gt;=</span> <span class="dv">0</span>, g1, <span class="fl">0.0</span>)</span>
+<span id="cb17-30"><a href="#cb17-30" aria-hidden="true" tabindex="-1"></a>            sigma2_t[t] <span class="op">=</span> omega <span class="op">+</span> (a1 <span class="op">+</span> gamma_eff) <span class="op">*</span> e[t] <span class="op">**</span> <span class="dv">2</span> <span class="op">+</span> b1 <span class="op">*</span> sigma2_t[t]</span>
+<span id="cb17-31"><a href="#cb17-31" aria-hidden="true" tabindex="-1"></a>            e[t] <span class="op">=</span> np.sqrt(sigma2_t[t]) <span class="op">*</span> F_inv[t]</span>
+<span id="cb17-32"><a href="#cb17-32" aria-hidden="true" tabindex="-1"></a>            sim_log_losses[t] <span class="op">=</span> mu <span class="op">+</span> np.sqrt(sigma2_t[t]) <span class="op">*</span> F_inv[t]</span>
+<span id="cb17-33"><a href="#cb17-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-34"><a href="#cb17-34" aria-hidden="true" tabindex="-1"></a>        portfolio_forecast[h] <span class="op">=</span> sim_log_losses.<span class="bu">sum</span>(axis<span class="op">=</span><span class="dv">1</span>) <span class="op">/</span> sim_log_losses.shape[<span class="dv">1</span>]</span>
+<span id="cb17-35"><a href="#cb17-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-36"><a href="#cb17-36" aria-hidden="true" tabindex="-1"></a>    simulated_portfolio <span class="op">=</span> portfolio_forecast.<span class="bu">sum</span>(axis<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb17-37"><a href="#cb17-37" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> simulated_portfolio, portfolio_forecast</span>
+<span id="cb17-38"><a href="#cb17-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-39"><a href="#cb17-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-40"><a href="#cb17-40" aria-hidden="true" tabindex="-1"></a>sim_port_vine, daily_vine <span class="op">=</span> forecast(</span>
+<span id="cb17-41"><a href="#cb17-41" aria-hidden="true" tabindex="-1"></a>    ticker, garch_result, std_resid, vine_cop, model, <span class="fl">0.95</span></span>
+<span id="cb17-42"><a href="#cb17-42" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb17-43"><a href="#cb17-43" aria-hidden="true" tabindex="-1"></a>sim_port_gauss, daily_gauss <span class="op">=</span> forecast(</span>
+<span id="cb17-44"><a href="#cb17-44" aria-hidden="true" tabindex="-1"></a>    ticker, garch_result, std_resid, gauss_cop, model, <span class="fl">0.95</span></span>
+<span id="cb17-45"><a href="#cb17-45" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb17-46"><a href="#cb17-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-47"><a href="#cb17-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-48"><a href="#cb17-48" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> risk_by_horizon(daily, q<span class="op">=</span><span class="fl">0.99</span>):</span>
+<span id="cb17-49"><a href="#cb17-49" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb17-50"><a href="#cb17-50" aria-hidden="true" tabindex="-1"></a><span class="co">    Cumulative VaR and ES at level q for each horizon.</span></span>
+<span id="cb17-51"><a href="#cb17-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-52"><a href="#cb17-52" aria-hidden="true" tabindex="-1"></a><span class="co">    Args:</span></span>
+<span id="cb17-53"><a href="#cb17-53" aria-hidden="true" tabindex="-1"></a><span class="co">        daily: (n_sims, horizon) array or DataFrame of per-day portfolio losses</span></span>
+<span id="cb17-54"><a href="#cb17-54" aria-hidden="true" tabindex="-1"></a><span class="co">        q:     confidence level</span></span>
+<span id="cb17-55"><a href="#cb17-55" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-56"><a href="#cb17-56" aria-hidden="true" tabindex="-1"></a><span class="co">    Returns:</span></span>
+<span id="cb17-57"><a href="#cb17-57" aria-hidden="true" tabindex="-1"></a><span class="co">        var, es — each a (horizon,) array of cumulative risk measures</span></span>
+<span id="cb17-58"><a href="#cb17-58" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb17-59"><a href="#cb17-59" aria-hidden="true" tabindex="-1"></a>    cum <span class="op">=</span> np.cumsum(np.asarray(daily), axis<span class="op">=</span><span class="dv">1</span>)  <span class="co"># (n_sims, horizon)</span></span>
+<span id="cb17-60"><a href="#cb17-60" aria-hidden="true" tabindex="-1"></a>    var <span class="op">=</span> np.quantile(cum, q, axis<span class="op">=</span><span class="dv">0</span>)  <span class="co"># (horizon,)</span></span>
+<span id="cb17-61"><a href="#cb17-61" aria-hidden="true" tabindex="-1"></a>    tail <span class="op">=</span> np.where(cum <span class="op">&gt;</span> var, cum, np.nan)  <span class="co"># non-exceedances -&gt; nan</span></span>
+<span id="cb17-62"><a href="#cb17-62" aria-hidden="true" tabindex="-1"></a>    es <span class="op">=</span> np.nanmean(tail, axis<span class="op">=</span><span class="dv">0</span>)  <span class="co"># (horizon,)</span></span>
+<span id="cb17-63"><a href="#cb17-63" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> var, es</span>
+<span id="cb17-64"><a href="#cb17-64" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-65"><a href="#cb17-65" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-66"><a href="#cb17-66" aria-hidden="true" tabindex="-1"></a>var_vine, es_vine <span class="op">=</span> risk_by_horizon(daily_vine)</span>
+<span id="cb17-67"><a href="#cb17-67" aria-hidden="true" tabindex="-1"></a>var_gauss, es_gauss <span class="op">=</span> risk_by_horizon(daily_gauss)</span>
+<span id="cb17-68"><a href="#cb17-68" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-69"><a href="#cb17-69" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-70"><a href="#cb17-70" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> _one_run(</span>
+<span id="cb17-71"><a href="#cb17-71" aria-hidden="true" tabindex="-1"></a>    r, ticker, garch_result, std_resid, copula, model, threshold, n_sims, base_seed</span>
+<span id="cb17-72"><a href="#cb17-72" aria-hidden="true" tabindex="-1"></a>):</span>
+<span id="cb17-73"><a href="#cb17-73" aria-hidden="true" tabindex="-1"></a>    sim_port, daily <span class="op">=</span> forecast(</span>
+<span id="cb17-74"><a href="#cb17-74" aria-hidden="true" tabindex="-1"></a>        ticker,</span>
+<span id="cb17-75"><a href="#cb17-75" aria-hidden="true" tabindex="-1"></a>        garch_result,</span>
+<span id="cb17-76"><a href="#cb17-76" aria-hidden="true" tabindex="-1"></a>        std_resid,</span>
+<span id="cb17-77"><a href="#cb17-77" aria-hidden="true" tabindex="-1"></a>        copula,</span>
+<span id="cb17-78"><a href="#cb17-78" aria-hidden="true" tabindex="-1"></a>        model,</span>
+<span id="cb17-79"><a href="#cb17-79" aria-hidden="true" tabindex="-1"></a>        threshold,</span>
+<span id="cb17-80"><a href="#cb17-80" aria-hidden="true" tabindex="-1"></a>        n_sims<span class="op">=</span>n_sims,</span>
+<span id="cb17-81"><a href="#cb17-81" aria-hidden="true" tabindex="-1"></a>        seed<span class="op">=</span>base_seed <span class="op">+</span> r,</span>
+<span id="cb17-82"><a href="#cb17-82" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb17-83"><a href="#cb17-83" aria-hidden="true" tabindex="-1"></a>    var, es <span class="op">=</span> risk_by_horizon(daily)</span>
+<span id="cb17-84"><a href="#cb17-84" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> var[<span class="op">-</span><span class="dv">1</span>], es[<span class="op">-</span><span class="dv">1</span>]</span>
+<span id="cb17-85"><a href="#cb17-85" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-86"><a href="#cb17-86" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-87"><a href="#cb17-87" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> repeat_forecast(</span>
+<span id="cb17-88"><a href="#cb17-88" aria-hidden="true" tabindex="-1"></a>    ticker,</span>
+<span id="cb17-89"><a href="#cb17-89" aria-hidden="true" tabindex="-1"></a>    garch_result,</span>
+<span id="cb17-90"><a href="#cb17-90" aria-hidden="true" tabindex="-1"></a>    std_resid,</span>
+<span id="cb17-91"><a href="#cb17-91" aria-hidden="true" tabindex="-1"></a>    copula,</span>
+<span id="cb17-92"><a href="#cb17-92" aria-hidden="true" tabindex="-1"></a>    model,</span>
+<span id="cb17-93"><a href="#cb17-93" aria-hidden="true" tabindex="-1"></a>    threshold,</span>
+<span id="cb17-94"><a href="#cb17-94" aria-hidden="true" tabindex="-1"></a>    R<span class="op">=</span><span class="dv">100</span>,</span>
+<span id="cb17-95"><a href="#cb17-95" aria-hidden="true" tabindex="-1"></a>    base_seed<span class="op">=</span><span class="dv">42</span>,</span>
+<span id="cb17-96"><a href="#cb17-96" aria-hidden="true" tabindex="-1"></a>    n_sims<span class="op">=</span><span class="dv">100000</span>,</span>
+<span id="cb17-97"><a href="#cb17-97" aria-hidden="true" tabindex="-1"></a>    n_jobs<span class="op">=</span><span class="dv">12</span>,</span>
+<span id="cb17-98"><a href="#cb17-98" aria-hidden="true" tabindex="-1"></a>):</span>
+<span id="cb17-99"><a href="#cb17-99" aria-hidden="true" tabindex="-1"></a>    results <span class="op">=</span> Parallel(n_jobs<span class="op">=</span>n_jobs)(</span>
+<span id="cb17-100"><a href="#cb17-100" aria-hidden="true" tabindex="-1"></a>        delayed(_one_run)(</span>
+<span id="cb17-101"><a href="#cb17-101" aria-hidden="true" tabindex="-1"></a>            r,</span>
+<span id="cb17-102"><a href="#cb17-102" aria-hidden="true" tabindex="-1"></a>            ticker,</span>
+<span id="cb17-103"><a href="#cb17-103" aria-hidden="true" tabindex="-1"></a>            garch_result,</span>
+<span id="cb17-104"><a href="#cb17-104" aria-hidden="true" tabindex="-1"></a>            std_resid,</span>
+<span id="cb17-105"><a href="#cb17-105" aria-hidden="true" tabindex="-1"></a>            copula,</span>
+<span id="cb17-106"><a href="#cb17-106" aria-hidden="true" tabindex="-1"></a>            model,</span>
+<span id="cb17-107"><a href="#cb17-107" aria-hidden="true" tabindex="-1"></a>            threshold,</span>
+<span id="cb17-108"><a href="#cb17-108" aria-hidden="true" tabindex="-1"></a>            n_sims,</span>
+<span id="cb17-109"><a href="#cb17-109" aria-hidden="true" tabindex="-1"></a>            base_seed,</span>
+<span id="cb17-110"><a href="#cb17-110" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb17-111"><a href="#cb17-111" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> r <span class="kw">in</span> <span class="bu">range</span>(R)</span>
+<span id="cb17-112"><a href="#cb17-112" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb17-113"><a href="#cb17-113" aria-hidden="true" tabindex="-1"></a>    var_runs, es_runs <span class="op">=</span> <span class="bu">zip</span>(<span class="op">*</span>results)</span>
+<span id="cb17-114"><a href="#cb17-114" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> np.array(var_runs), np.array(es_runs)</span>
+<span id="cb17-115"><a href="#cb17-115" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-116"><a href="#cb17-116" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-117"><a href="#cb17-117" aria-hidden="true" tabindex="-1"></a>MC_var_vine, MC_es_vine <span class="op">=</span> repeat_forecast(</span>
+<span id="cb17-118"><a href="#cb17-118" aria-hidden="true" tabindex="-1"></a>    ticker<span class="op">=</span>ticker,</span>
+<span id="cb17-119"><a href="#cb17-119" aria-hidden="true" tabindex="-1"></a>    garch_result<span class="op">=</span>garch_result,</span>
+<span id="cb17-120"><a href="#cb17-120" aria-hidden="true" tabindex="-1"></a>    std_resid<span class="op">=</span>std_resid,</span>
+<span id="cb17-121"><a href="#cb17-121" aria-hidden="true" tabindex="-1"></a>    copula<span class="op">=</span>vine_cop,</span>
+<span id="cb17-122"><a href="#cb17-122" aria-hidden="true" tabindex="-1"></a>    model<span class="op">=</span>model,</span>
+<span id="cb17-123"><a href="#cb17-123" aria-hidden="true" tabindex="-1"></a>    threshold<span class="op">=</span><span class="fl">0.95</span>,</span>
+<span id="cb17-124"><a href="#cb17-124" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb17-125"><a href="#cb17-125" aria-hidden="true" tabindex="-1"></a>MC_var_gauss, MC_es_gauss <span class="op">=</span> repeat_forecast(</span>
+<span id="cb17-126"><a href="#cb17-126" aria-hidden="true" tabindex="-1"></a>    ticker<span class="op">=</span>ticker,</span>
+<span id="cb17-127"><a href="#cb17-127" aria-hidden="true" tabindex="-1"></a>    garch_result<span class="op">=</span>garch_result,</span>
+<span id="cb17-128"><a href="#cb17-128" aria-hidden="true" tabindex="-1"></a>    std_resid<span class="op">=</span>std_resid,</span>
+<span id="cb17-129"><a href="#cb17-129" aria-hidden="true" tabindex="-1"></a>    copula<span class="op">=</span>gauss_cop,</span>
+<span id="cb17-130"><a href="#cb17-130" aria-hidden="true" tabindex="-1"></a>    model<span class="op">=</span>model,</span>
+<span id="cb17-131"><a href="#cb17-131" aria-hidden="true" tabindex="-1"></a>    threshold<span class="op">=</span><span class="fl">0.95</span>,</span>
+<span id="cb17-132"><a href="#cb17-132" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="day-result---one-path" class="level3">
+<h3 class="anchored" data-anchor-id="day-result---one-path">10-day result - one path</h3>
+<p>The simulated loss distributions and cumulative risk measures are shown for both copula specifications. To motivate the GARCH-based forward simulation, the vine copula risk measures are compared against a naïve square-root-of-time benchmark, which scales the one-day VaR and ES by <span class="math inline">\(\sqrt{h}\)</span>. The <span class="math inline">\(\sqrt{t}\)</span> rule implicitly assumes constant, i.i.d. volatility. Under GARCH, however, conditional volatility is mean-reverting: when current volatility is elevated, the model expects it to decline, so cumulative risk grows more slowly than <span class="math inline">\(\sqrt{h}\)</span> implies. This is visible in the left panel — both naïve estimates lie systematically above their MC counterparts across all horizons.</p>
+<p>The right panel compares the simulated 10-day loss distributions for vine and Gaussian copulas. As expected, the vine model produces larger tail risk estimates: the 10-day 99% VaR is 0.0837 for vine versus 0.0810 for Gauss, and the ES is 0.1044 versus 0.0984. This plot represents a single simulation run; whether this difference reflects genuine model structure or Monte Carlo noise is examined in the next section.</p>
+<div id="e37d4cfd" class="cell" data-execution_count="14">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 1-day anchor for the naive scaling rule</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>var_1d_vine <span class="op">=</span> var_vine[<span class="dv">0</span>]</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>var_path_scaled_vine <span class="op">=</span> var_1d_vine <span class="op">*</span> np.sqrt(np.arange(<span class="dv">1</span>, <span class="dv">11</span>))</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>var_cum_scaled_vine <span class="op">=</span> var_1d_vine <span class="op">*</span> np.sqrt(<span class="dv">10</span>)</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>es_1d_vine <span class="op">=</span> es_vine[<span class="dv">0</span>]</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>es_path_scaled_vine <span class="op">=</span> es_1d_vine <span class="op">*</span> np.sqrt(np.arange(<span class="dv">1</span>, <span class="dv">11</span>))</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>es_cum_scaled_vine <span class="op">=</span> es_1d_vine <span class="op">*</span> np.sqrt(<span class="dv">10</span>)</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>h_axis <span class="op">=</span> np.arange(<span class="dv">1</span>, <span class="dv">11</span>)</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">14</span>, <span class="dv">5</span>))</span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a><span class="co"># (a) Cumulative VaR by horizon</span></span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> axes[<span class="dv">0</span>]</span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>ax.plot(h_axis, var_vine, <span class="st">"o-"</span>, color<span class="op">=</span><span class="st">"steelblue"</span>, label<span class="op">=</span><span class="st">"MC — VaR - Vine"</span>)</span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>ax.plot(h_axis, es_vine, <span class="st">"s--"</span>, color<span class="op">=</span><span class="st">"navy"</span>, label<span class="op">=</span><span class="st">"MC — ES - Vine"</span>)</span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>ax.plot(h_axis, var_path_scaled_vine, <span class="st">"x:"</span>, color<span class="op">=</span><span class="st">"black"</span>, label<span class="op">=</span><span class="st">"√t scaling VaR"</span>)</span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>ax.plot(h_axis, es_path_scaled_vine, <span class="st">"X:"</span>, color<span class="op">=</span><span class="st">"black"</span>, label<span class="op">=</span><span class="st">"√t scaling ES"</span>)</span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">"Horizon h (trading days)"</span>)</span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">"99% VaR/ES of cumulative loss"</span>)</span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">"Cumulative VaR/ES by horizon"</span>)</span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>ax.legend()</span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a><span class="co"># (b) 10-day cumulative loss distribution</span></span>
+<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> axes[<span class="dv">1</span>]</span>
+<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a>sns.histplot(</span>
+<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a>    sim_port_vine.to_numpy(),</span>
+<span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a>    bins<span class="op">=</span><span class="dv">80</span>,</span>
+<span id="cb18-29"><a href="#cb18-29" aria-hidden="true" tabindex="-1"></a>    stat<span class="op">=</span><span class="st">"density"</span>,</span>
+<span id="cb18-30"><a href="#cb18-30" aria-hidden="true" tabindex="-1"></a>    alpha<span class="op">=</span><span class="fl">0.4</span>,</span>
+<span id="cb18-31"><a href="#cb18-31" aria-hidden="true" tabindex="-1"></a>    color<span class="op">=</span><span class="st">"steelblue"</span>,</span>
+<span id="cb18-32"><a href="#cb18-32" aria-hidden="true" tabindex="-1"></a>    label<span class="op">=</span><span class="st">"Vine"</span>,</span>
+<span id="cb18-33"><a href="#cb18-33" aria-hidden="true" tabindex="-1"></a>    ax<span class="op">=</span>ax,</span>
+<span id="cb18-34"><a href="#cb18-34" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb18-35"><a href="#cb18-35" aria-hidden="true" tabindex="-1"></a>sns.histplot(</span>
+<span id="cb18-36"><a href="#cb18-36" aria-hidden="true" tabindex="-1"></a>    sim_port_gauss.to_numpy(),</span>
+<span id="cb18-37"><a href="#cb18-37" aria-hidden="true" tabindex="-1"></a>    bins<span class="op">=</span><span class="dv">80</span>,</span>
+<span id="cb18-38"><a href="#cb18-38" aria-hidden="true" tabindex="-1"></a>    stat<span class="op">=</span><span class="st">"density"</span>,</span>
+<span id="cb18-39"><a href="#cb18-39" aria-hidden="true" tabindex="-1"></a>    alpha<span class="op">=</span><span class="fl">0.4</span>,</span>
+<span id="cb18-40"><a href="#cb18-40" aria-hidden="true" tabindex="-1"></a>    color<span class="op">=</span><span class="st">"orange"</span>,</span>
+<span id="cb18-41"><a href="#cb18-41" aria-hidden="true" tabindex="-1"></a>    label<span class="op">=</span><span class="st">"Gauss"</span>,</span>
+<span id="cb18-42"><a href="#cb18-42" aria-hidden="true" tabindex="-1"></a>    ax<span class="op">=</span>ax,</span>
+<span id="cb18-43"><a href="#cb18-43" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb18-44"><a href="#cb18-44" aria-hidden="true" tabindex="-1"></a>ax.axvline(var_vine[<span class="op">-</span><span class="dv">1</span>], color<span class="op">=</span><span class="st">"steelblue"</span>, lw<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="ss">f"VaR Vine  </span><span class="sc">{</span>var_vine[<span class="op">-</span><span class="dv">1</span>]<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb18-45"><a href="#cb18-45" aria-hidden="true" tabindex="-1"></a>ax.axvline(var_gauss[<span class="op">-</span><span class="dv">1</span>], color<span class="op">=</span><span class="st">"tomato"</span>, lw<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="ss">f"VaR Gauss </span><span class="sc">{</span>var_gauss[<span class="op">-</span><span class="dv">1</span>]<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb18-46"><a href="#cb18-46" aria-hidden="true" tabindex="-1"></a>ax.axvline(es_vine[<span class="op">-</span><span class="dv">1</span>], color<span class="op">=</span><span class="st">"navy"</span>, lw<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="ss">f"ES Vine  </span><span class="sc">{</span>es_vine[<span class="op">-</span><span class="dv">1</span>]<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb18-47"><a href="#cb18-47" aria-hidden="true" tabindex="-1"></a>ax.axvline(es_gauss[<span class="op">-</span><span class="dv">1</span>], color<span class="op">=</span><span class="st">"darkred"</span>, lw<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="ss">f"ES Gauss  </span><span class="sc">{</span>es_gauss[<span class="op">-</span><span class="dv">1</span>]<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb18-48"><a href="#cb18-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-49"><a href="#cb18-49" aria-hidden="true" tabindex="-1"></a>ax.axvline(</span>
+<span id="cb18-50"><a href="#cb18-50" aria-hidden="true" tabindex="-1"></a>    var_cum_scaled_vine,</span>
+<span id="cb18-51"><a href="#cb18-51" aria-hidden="true" tabindex="-1"></a>    color<span class="op">=</span><span class="st">"black"</span>,</span>
+<span id="cb18-52"><a href="#cb18-52" aria-hidden="true" tabindex="-1"></a>    ls<span class="op">=</span><span class="st">"-."</span>,</span>
+<span id="cb18-53"><a href="#cb18-53" aria-hidden="true" tabindex="-1"></a>    lw<span class="op">=</span><span class="fl">1.5</span>,</span>
+<span id="cb18-54"><a href="#cb18-54" aria-hidden="true" tabindex="-1"></a>    label<span class="op">=</span><span class="ss">f"VaR √t   </span><span class="sc">{</span>var_cum_scaled_vine<span class="sc">:.4f}</span><span class="ss">"</span>,</span>
+<span id="cb18-55"><a href="#cb18-55" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb18-56"><a href="#cb18-56" aria-hidden="true" tabindex="-1"></a>ax.axvline(</span>
+<span id="cb18-57"><a href="#cb18-57" aria-hidden="true" tabindex="-1"></a>    es_cum_scaled_vine,</span>
+<span id="cb18-58"><a href="#cb18-58" aria-hidden="true" tabindex="-1"></a>    color<span class="op">=</span><span class="st">"black"</span>,</span>
+<span id="cb18-59"><a href="#cb18-59" aria-hidden="true" tabindex="-1"></a>    ls<span class="op">=</span><span class="st">"--"</span>,</span>
+<span id="cb18-60"><a href="#cb18-60" aria-hidden="true" tabindex="-1"></a>    lw<span class="op">=</span><span class="fl">1.5</span>,</span>
+<span id="cb18-61"><a href="#cb18-61" aria-hidden="true" tabindex="-1"></a>    label<span class="op">=</span><span class="ss">f"ES √t   </span><span class="sc">{</span>es_cum_scaled_vine<span class="sc">:.4f}</span><span class="ss">"</span>,</span>
+<span id="cb18-62"><a href="#cb18-62" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb18-63"><a href="#cb18-63" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">"10-day cumulative log-loss"</span>)</span>
+<span id="cb18-64"><a href="#cb18-64" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">"Simulated 10-day loss distribution"</span>)</span>
+<span id="cb18-65"><a href="#cb18-65" aria-hidden="true" tabindex="-1"></a>ax.legend()</span>
+<span id="cb18-66"><a href="#cb18-66" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-67"><a href="#cb18-67" aria-hidden="true" tabindex="-1"></a>fig.suptitle(<span class="st">"10-day VaR forecast — MC vs √t scaling"</span>, y<span class="op">=</span><span class="fl">1.02</span>)</span>
+<span id="cb18-68"><a href="#cb18-68" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb18-69"><a href="#cb18-69" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Copula_Analysis_files/figure-html/cell-15-output-1.png" width="1334" height="494" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="day-result---one-hundred-paths" class="level3">
+<h3 class="anchored" data-anchor-id="day-result---one-hundred-paths">10-day result - one hundred paths</h3>
+<p>To assess whether the difference between vine and Gaussian copula risk estimates reflects genuine model structure or Monte Carlo noise, both risk measures are computed across <span class="math inline">\(R = 100\)</span> independent simulation runs. The results are unambiguous: the vine copula produces higher 10-day VaR and ES than the Gaussian copula in every single run, with mean paired differences of 0.0033 for VaR and 0.0066 for ES. The paired difference histograms lie entirely to the right of zero, confirming that the effect is not an artefact of sampling variability.</p>
+<p>The ES gap is approximately twice the VaR gap. This is the central economic finding of the project. VaR is a quantile estimator — it captures whether a threshold is exceeded, but not by how much. ES averages over the magnitude of exceedances. Under the vine copula, tail-dependent assets tend to experience large losses simultaneously in the worst scenarios, driving up the size of joint exceedances. The Gaussian copula, with its asymptotic independence, cannot reproduce this co-movement in the extremes. The consequence is that the Gaussian model systematically underestimates the severity of tail events — and this underestimation is more pronounced for ES than for VaR precisely because ES is sensitive to what happens deep in the tail.</p>
+<div id="3624aa10" class="cell" data-execution_count="15">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>diff_var <span class="op">=</span> MC_var_vine <span class="op">-</span> MC_var_gauss   <span class="co"># gepaart dank CRN</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>diff_es  <span class="op">=</span> MC_es_vine  <span class="op">-</span> MC_es_gauss</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">2</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">13</span>, <span class="dv">9</span>))</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> axes[<span class="dv">0</span>, <span class="dv">0</span>]</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>ax.boxplot([MC_var_vine, MC_var_gauss], showmeans<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>ax.set_xticklabels([<span class="st">"Vine"</span>, <span class="st">"Gauss"</span>])<span class="op">;</span> ax.set_ylabel(<span class="st">"99% VaR"</span>)</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">"10-day VaR — distribution over runs"</span>)</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> axes[<span class="dv">0</span>, <span class="dv">1</span>]</span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>ax.hist(diff_var, bins<span class="op">=</span><span class="dv">30</span>, color<span class="op">=</span><span class="st">"steelblue"</span>, alpha<span class="op">=</span><span class="fl">0.7</span>)</span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>ax.axvline(<span class="dv">0</span>, color<span class="op">=</span><span class="st">"black"</span>, lw<span class="op">=</span><span class="fl">1.5</span>, ls<span class="op">=</span><span class="st">"--"</span>)</span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>ax.axvline(diff_var.mean(), color<span class="op">=</span><span class="st">"red"</span>, lw<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="ss">f"mean </span><span class="sc">{</span>diff_var<span class="sc">.</span>mean()<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">"VaR(Vine) − VaR(Gauss), paired"</span>)<span class="op">;</span> ax.legend()</span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> axes[<span class="dv">1</span>, <span class="dv">0</span>]</span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>ax.boxplot([MC_es_vine, MC_es_gauss], showmeans<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>ax.set_xticklabels([<span class="st">"Vine"</span>, <span class="st">"Gauss"</span>])<span class="op">;</span> ax.set_ylabel(<span class="st">"99</span><span class="sc">% E</span><span class="st">S"</span>)</span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">"10-day ES — distribution over runs"</span>)</span>
+<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> axes[<span class="dv">1</span>, <span class="dv">1</span>]</span>
+<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a>ax.hist(diff_es, bins<span class="op">=</span><span class="dv">30</span>, color<span class="op">=</span><span class="st">"navy"</span>, alpha<span class="op">=</span><span class="fl">0.7</span>)</span>
+<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a>ax.axvline(<span class="dv">0</span>, color<span class="op">=</span><span class="st">"black"</span>, lw<span class="op">=</span><span class="fl">1.5</span>, ls<span class="op">=</span><span class="st">"--"</span>)</span>
+<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a>ax.axvline(diff_es.mean(), color<span class="op">=</span><span class="st">"red"</span>, lw<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="ss">f"mean </span><span class="sc">{</span>diff_es<span class="sc">.</span>mean()<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb19-26"><a href="#cb19-26" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">"ES(Vine) − ES(Gauss), paired"</span>)<span class="op">;</span> ax.legend()</span>
+<span id="cb19-27"><a href="#cb19-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-28"><a href="#cb19-28" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb19-29"><a href="#cb19-29" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb19-30"><a href="#cb19-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-31"><a href="#cb19-31" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">12</span>, <span class="fl">5.5</span>))</span>
+<span id="cb19-32"><a href="#cb19-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-33"><a href="#cb19-33" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> ax, vine, gauss, name <span class="kw">in</span> [</span>
+<span id="cb19-34"><a href="#cb19-34" aria-hidden="true" tabindex="-1"></a>    (axes[<span class="dv">0</span>], MC_var_vine, MC_var_gauss, <span class="st">"VaR"</span>),</span>
+<span id="cb19-35"><a href="#cb19-35" aria-hidden="true" tabindex="-1"></a>    (axes[<span class="dv">1</span>], MC_es_vine,  MC_es_gauss,  <span class="st">"ES"</span>),</span>
+<span id="cb19-36"><a href="#cb19-36" aria-hidden="true" tabindex="-1"></a>]:</span>
+<span id="cb19-37"><a href="#cb19-37" aria-hidden="true" tabindex="-1"></a>    ax.scatter(gauss, vine, alpha<span class="op">=</span><span class="fl">0.6</span>, color<span class="op">=</span><span class="st">"steelblue"</span>, edgecolor<span class="op">=</span><span class="st">"navy"</span>, s<span class="op">=</span><span class="dv">40</span>)</span>
+<span id="cb19-38"><a href="#cb19-38" aria-hidden="true" tabindex="-1"></a>    <span class="co"># y=x diagonal across the joint range</span></span>
+<span id="cb19-39"><a href="#cb19-39" aria-hidden="true" tabindex="-1"></a>    lo <span class="op">=</span> <span class="bu">min</span>(gauss.<span class="bu">min</span>(), vine.<span class="bu">min</span>())</span>
+<span id="cb19-40"><a href="#cb19-40" aria-hidden="true" tabindex="-1"></a>    hi <span class="op">=</span> <span class="bu">max</span>(gauss.<span class="bu">max</span>(), vine.<span class="bu">max</span>())</span>
+<span id="cb19-41"><a href="#cb19-41" aria-hidden="true" tabindex="-1"></a>    ax.plot([lo, hi], [lo, hi], <span class="st">"k--"</span>, lw<span class="op">=</span><span class="dv">1</span>, label<span class="op">=</span><span class="st">"y = x"</span>)</span>
+<span id="cb19-42"><a href="#cb19-42" aria-hidden="true" tabindex="-1"></a>    ax.set_xlabel(<span class="ss">f"Gauss </span><span class="sc">{</span>name<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb19-43"><a href="#cb19-43" aria-hidden="true" tabindex="-1"></a>    ax.set_ylabel(<span class="ss">f"Vine </span><span class="sc">{</span>name<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb19-44"><a href="#cb19-44" aria-hidden="true" tabindex="-1"></a>    ax.set_title(<span class="ss">f"10-day </span><span class="sc">{</span>name<span class="sc">}</span><span class="ss"> — paired runs (CRN)"</span>)</span>
+<span id="cb19-45"><a href="#cb19-45" aria-hidden="true" tabindex="-1"></a>    ax.legend()</span>
+<span id="cb19-46"><a href="#cb19-46" aria-hidden="true" tabindex="-1"></a>    ax.set_aspect(<span class="st">"equal"</span>)   </span>
+<span id="cb19-47"><a href="#cb19-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-48"><a href="#cb19-48" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb19-49"><a href="#cb19-49" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Copula_Analysis_files/figure-html/cell-16-output-1.png" width="1237" height="854" class="figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Copula_Analysis_files/figure-html/cell-16-output-2.png" width="1096" height="519" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="conclusion" class="level2">
+<h2 class="anchored" data-anchor-id="conclusion">Conclusion</h2>
+<p>This project has shown that the choice of dependence model has a material impact on portfolio tail risk estimates. Assuming asymptotic independence in the tails — as the Gaussian copula does by construction — leads to systematic underestimation of both VaR and ES. Across <span class="math inline">\(R = 100\)</span> independent simulation runs with Common Random Numbers, the vine copula produced higher 10-day 99% tail risk estimates than the Gaussian copula in every single run, with a mean paired difference of approximately 4% for VaR and 6% for ES.</p>
+<p>The larger gap for ES is not coincidental. VaR captures whether a threshold is exceeded; ES averages over the magnitude of exceedances. Under positive upper tail dependence, assets are more likely to experience large losses simultaneously — driving up the size of joint exceedances beyond what the Gaussian copula can reproduce. ES is directly sensitive to this effect; VaR only partially so.</p>
+<p>Several limitations should be noted. The portfolio is equally weighted and static — with optimised or dynamically adjusted weights, both the quantitative results and the relative advantage of the vine copula could differ. All assets are denominated in USD, deliberately excluding currency risk; extending the analysis to international investments would require modelling exchange rate dependence as well. Finally, the aluminium futures (ALI=F) showed a poor GPD fit due to a singular price spike in 2022, which means tail risk for that asset is likely underestimated.</p>
+<p>Natural extensions include dynamic copula specifications that allow the dependence structure to evolve over time, more complex instruments such as financial derivatives, and a rolling-window backtest of portfolio-level VaR and ES to formally validate the joint model out of sample.</p>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
