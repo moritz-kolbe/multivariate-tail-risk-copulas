@@ -57,3 +57,5 @@ quarto render Copula_Analysis.qmd
 ```
 yfinance arch scipy numpy pandas matplotlib seaborn pyextremes pyvinecopulib joblib 
 ```
+
+Quarto must be installed separately: [quarto.org/docs/get-started](https://quarto.org/docs/get-started/)
