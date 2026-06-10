@@ -1,3 +1,12 @@
+---
+title: "Multivariate Tail Risk — Mixed Equity-Commodity Portfolio — Vine vs. Gaussian Copula"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    toc-title: "Contents"
+---
+
 ```{python}
 import pandas as pd
 import numpy as np
