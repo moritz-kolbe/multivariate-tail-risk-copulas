@@ -7,17 +7,57 @@ format:
     toc-title: "Contents"
 ---
 
+::::: {.callout-note appearance="simple" icon=false title="Visual Abstract"}
+
+:::: {.columns}
+
+::: {.column width="32%"}
+**Approach**
+
+A two-stage semiparametric model on a 10-asset equity–commodity portfolio:
+GJR-GARCH(1,1,1) margins with GPD tails (POT), coupled by a vine copula
+(Dissmann selection) and benchmarked against a Gaussian copula. Risk measures
+are obtained by Monte Carlo, with Common Random Numbers isolating the model
+effect from sampling noise.
+:::
+
+::: {.column width="2%"}
+:::
+
+::: {.column width="32%"}
+**Key Finding**
+
+The Gaussian copula is asymptotically independent in the tails ($\lambda_U = 0$)
+and therefore underestimates joint extreme losses. The 10-day 99% VaR is 0.0837
+(vine) vs. 0.0810 (Gauss) and ES is 0.1044 vs. 0.0984; across $R = 100$ paired
+runs the vine exceeds the Gaussian in every single one. The ES gap (~6%) is about
+twice the VaR gap (~4%).
+:::
+
+::: {.column width="2%"}
+:::
+
+::: {.column width="32%"}
+**Takeaway**
+
+The dependence model — not the marginals — drives the difference: both share the
+same GPD margins. Because ES averages over the magnitude of joint exceedances, it
+is more sensitive than VaR to the tail co-movement that the Gaussian copula cannot
+reproduce.
+:::
+
+::::
+
+:::::
 
 ```{python}
 import pandas as pd
 import numpy as np
-from pyvinecopulib import Vinecop
 from scipy.stats import rankdata, genpareto
 from pyextremes import EVA
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pyvinecopulib as pv
-import pyextremes
 import yfinance as yf
 from arch import arch_model
 from joblib import Parallel, delayed
@@ -84,7 +124,12 @@ ticker = [
 prices = yf.download(ticker, start="2014-05-06", progress=False)
 close = prices["Close"]
 
-log_returns = np.log(close / close.shift(1)).dropna()
+# WTI crude (CL=F) settled at negative prices in April 2020, and the panel
+# contains a few gaps; both make the price ratio non-positive, which numpy flags
+# when taking logs. The subsequent dropna() removes those rows, so the result is
+# unaffected — the errstate guard only suppresses the (expected) warning.
+with np.errstate(invalid="ignore"):
+    log_returns = np.log(close / close.shift(1)).dropna()
 
 n_years = (log_returns.index[-1] - log_returns.index[0]).days / 365.25
 n_obs = len(log_returns)
@@ -499,7 +544,7 @@ plt.xlim(0.00, 0.20)
 plt.axvline(VaR_vine_1d, color="steelblue", lw=2, label=f"VaR Vine  {VaR_vine_1d:.3f}")
 plt.axvline(VaR_gauss_1d, color="tomato", lw=2, label=f"VaR Gauss {VaR_gauss_1d:.3f}")
 plt.axvline(ES_vine_1d, color="navy", lw=2, label=f"ES Vine  {ES_vine_1d:.3f}")
-plt.axvline(ES_gauss_1d, color="darkred", lw=2, label=f"ES Gauss  {ES_gauss_1d:.4f}")
+plt.axvline(ES_gauss_1d, color="darkred", lw=2, label=f"ES Gauss  {ES_gauss_1d:.3f}")
 plt.legend()
 plt.show()
 ```
@@ -770,7 +815,7 @@ underestimation is more pronounced for ES than for VaR precisely because ES is
 sensitive to what happens deep in the tail.
 
 ```{python}
-diff_var = MC_var_vine - MC_var_gauss   # gepaart dank CRN
+diff_var = MC_var_vine - MC_var_gauss   # paired via CRN
 diff_es  = MC_es_vine  - MC_es_gauss
 
 fig, axes = plt.subplots(2, 2, figsize=(13, 9))
@@ -850,5 +895,3 @@ Natural extensions include dynamic copula specifications that allow the dependen
 structure to evolve over time, more complex instruments such as financial
 derivatives, and a rolling-window backtest of portfolio-level VaR and ES to
 formally validate the joint model out of sample.
-
-
