@@ -79,8 +79,8 @@ ticker = [
 ]
 ```
 ```{python}
-prices = yf.download(ticker, start="2014-05-06")
-close = prices['Close']
+prices = yf.download(ticker, start="2014-05-06", progress=False)
+close = prices["Close"]
 
 log_returns = np.log(close / close.shift(1)).dropna()
 
@@ -387,7 +387,6 @@ $z = u$ — the inverse PIT is continuous at the threshold.
 
 ```{python}
 sim = pv.Vinecop.simulate(vine_cop, n=10000)
-sim.shape
 sim_gauss = pv.Vinecop.simulate(gauss_cop, n=10000)
 
 
